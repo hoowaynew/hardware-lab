@@ -1,0 +1,82 @@
+{
+  "id": "led-resistor",
+  "topic_id": "power-001",
+  "title": "LED限流电阻计算器",
+  "category": "power",
+  "difficulty": "beginner",
+  "description": "拖拽不同阻值，观察LED状态——选错了会烧！",
+  "canvas": {
+    "width": 400,
+    "height": 200,
+    "components": [
+      {
+        "type": "power",
+        "id": "V1",
+        "x": 50,
+        "y": 100,
+        "voltage": 3.3,
+        "label": "3.3V"
+      },
+      {
+        "type": "resistor",
+        "id": "R1",
+        "x": 170,
+        "y": 100,
+        "value": 330,
+        "label": "330Ω",
+        "options": [10, 33, 47, 100, 220, 330, 470, 1000, 10000]
+      },
+      {
+        "type": "led",
+        "id": "D1",
+        "x": 290,
+        "y": 100,
+        "color": "red",
+        "forwardVoltage": 2.0,
+        "maxCurrent": 20,
+        "label": "LED"
+      },
+      {
+        "type": "ground",
+        "id": "G1",
+        "x": 370,
+        "y": 100
+      }
+    ],
+    "wires": [
+      ["V1+", "R1.1"],
+      ["R1.2", "D1.anode"],
+      ["D1.cathode", "G1.gnd"]
+    ]
+  },
+  "interactions": [
+    {
+      "type": "click-cycle",
+      "target": "R1",
+      "property": "value",
+      "label": "点击切换电阻值"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "current > 20",
+      "type": "LED_OVERCURRENT",
+      "title": "LED烧毁了！💥",
+      "explanation": "电流 {current}mA 超过LED额定20mA。限流电阻 R = (Vcc - Vf) / If = (3.3 - 2.0) / 0.02 = 65Ω",
+      "article_ref": "power-001",
+      "animation": "smoke"
+    },
+    {
+      "condition": "polarity === reversed",
+      "type": "LED_REVERSED",
+      "title": "LED不亮",
+      "explanation": "LED是二极管，正极需接高电位。检查接线方向。",
+      "article_ref": "power-001",
+      "animation": "highlight-pins"
+    }
+  ],
+  "targets": {
+    "perfect": { "resistance": "≥65Ω", "current": "≤20mA" },
+    "hint": "红色LED正向压降约2.0V，额定电流20mA。R = (3.3 - 2.0) / 0.02 = 65Ω"
+  }
+}

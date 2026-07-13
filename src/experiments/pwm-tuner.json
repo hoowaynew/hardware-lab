@@ -1,0 +1,79 @@
+{
+  "id": "pwm-tuner",
+  "topic_id": "timing-005",
+  "title": "PWM占空比可视化调音台",
+  "category": "timing",
+  "difficulty": "intermediate",
+  "description": "调节PWM频率和占空比，观察LED/舵机/蜂鸣器的不同响应",
+  "canvas": {
+    "width": 400,
+    "height": 300,
+    "components": [
+      {
+        "type": "pwm",
+        "id": "PWM1",
+        "x": 200,
+        "y": 60,
+        "label": "PWM信号源",
+        "defaultLoad": "led"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "target": "PWM1",
+      "property": "pwmFrequency",
+      "min": 10,
+      "max": 20000,
+      "step": 10,
+      "default": 1000,
+      "unit": "Hz",
+      "label": "频率"
+    },
+    {
+      "type": "slider",
+      "target": "PWM1",
+      "property": "pwmDutyCycle",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 50,
+      "unit": "%",
+      "label": "占空比"
+    },
+    {
+      "type": "select",
+      "target": "PWM1",
+      "property": "pwmLoad",
+      "options": [
+        { "value": "led", "label": "💡 LED", "icon": "💡" },
+        { "value": "servo", "label": "⚙️ 舵机", "icon": "⚙️" },
+        { "value": "buzzer", "label": "🔊 蜂鸣器", "icon": "🔊" }
+      ],
+      "label": "负载类型"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "loadType === servo && frequency !== 50",
+      "type": "PWM_SERVO_FREQ",
+      "title": "舵机不动了！⚙️",
+      "explanation": "舵机需要50Hz（20ms周期）信号。当前频率{frequency}Hz。",
+      "article_ref": "timing-005"
+    },
+    {
+      "condition": "loadType === servo && dutyCycle === 100",
+      "type": "PWM_SERVO_100",
+      "title": "舵机不动了！⚙️",
+      "explanation": "100%占空比 = 直流电，舵机无法识别角度信号。",
+      "article_ref": "timing-005"
+    }
+  ],
+  "targets": {
+    "led": { "description": "LED亮度随占空比线性变化", "goodRange": "0%-100%" },
+    "servo": { "description": "舵机角度随脉冲宽度变化", "goodRange": "50Hz, 2.5%-12.5%" },
+    "buzzer": { "description": "蜂鸣器音调随频率变化", "goodRange": "20Hz-20kHz" }
+  }
+}

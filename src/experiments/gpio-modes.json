@@ -1,0 +1,86 @@
+{
+  "id": "gpio-modes",
+  "topic_id": "stm32-002",
+  "title": "GPIO八种模式配置器",
+  "category": "stm32",
+  "difficulty": "intermediate",
+  "description": "切换GPIO的8种工作模式，观察引脚行为——配错了会短路！",
+  "canvas": {
+    "width": 400,
+    "height": 240,
+    "components": [
+      {
+        "type": "gpio",
+        "id": "PA0",
+        "x": 200,
+        "y": 120,
+        "label": "PA0",
+        "defaultMode": "input_floating"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "mode-select",
+      "target": "PA0",
+      "property": "gpioMode",
+      "options": [
+        { "value": "input_floating", "label": "输入浮空", "icon": "❓" },
+        { "value": "input_pullup", "label": "输入上拉", "icon": "⬆️" },
+        { "value": "input_pulldown", "label": "输入下拉", "icon": "⬇️" },
+        { "value": "input_analog", "label": "模拟输入", "icon": "📊" },
+        { "value": "output_opendrain", "label": "开漏输出", "icon": "🔓" },
+        { "value": "output_pushpull", "label": "推挽输出", "icon": "🔀" },
+        { "value": "af_pushpull", "label": "复用推挽", "icon": "🔗" },
+        { "value": "af_opendrain", "label": "复用开漏", "icon": "🔗" }
+      ],
+      "label": "选择GPIO模式"
+    },
+    {
+      "type": "toggle",
+      "target": "PA0",
+      "property": "outputLevel",
+      "values": ["high", "low"],
+      "label": "输出电平",
+      "showWhen": ["output_opendrain", "output_pushpull", "af_pushpull", "af_opendrain"]
+    },
+    {
+      "type": "toggle",
+      "target": "PA0",
+      "property": "connectedToGround",
+      "values": [true, false],
+      "label": "接GND？",
+      "showWhen": ["output_pushpull"]
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "mode === input_floating",
+      "type": "GPIO_FLOATING",
+      "title": "引脚电平不稳定！",
+      "explanation": "浮空输入没有上拉/下拉，引脚电平不确定，会受干扰波动。",
+      "article_ref": "stm32-002",
+      "animation": "wave-jitter"
+    },
+    {
+      "condition": "mode === output_opendrain && outputLevel === high",
+      "type": "OPENDRAIN_NO_PULLUP",
+      "title": "输出无法拉高",
+      "explanation": "开漏输出需要外部上拉电阻才能输出高电平。",
+      "article_ref": "stm32-002"
+    },
+    {
+      "condition": "mode === output_pushpull && connectedToGround && outputLevel === high",
+      "type": "GPIO_SHORT",
+      "title": "短路警告！⚠️",
+      "explanation": "推挽输出直接接地且输出高电平 = 短路。",
+      "article_ref": "stm32-002",
+      "animation": "spark"
+    }
+  ],
+  "targets": {
+    "perfect": "选择正确的模式且不触发任何错误",
+    "hint": "浮空输入不靠谱，推挽输出别短路"
+  }
+}
