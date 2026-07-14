@@ -123,14 +123,24 @@ function formatSliderValue(interaction) {
   if (interaction.unit === 'Hz') {
     return v >= 1000 ? `${(v / 1000).toFixed(1)}kHz` : `${v}Hz`
   }
+  if (interaction.unit === 'Ω') {
+    return v >= 1000 ? `${(v / 1000).toFixed(1)}kΩ` : `${v}Ω`
+  }
   return `${v}${interaction.unit || ''}`
 }
 
 function formatToggleValue(val, interaction) {
+  // Use custom labels if provided
+  if (interaction.labels) {
+    const idx = interaction.values.indexOf(val)
+    if (idx >= 0 && interaction.labels[idx]) return interaction.labels[idx]
+  }
   if (val === true) return '是'
   if (val === false) return '否'
   if (val === 'high') return '高电平'
   if (val === 'low') return '低电平'
+  if (val === 'charge') return '充电'
+  if (val === 'discharge') return '放电'
   return String(val)
 }
 </script>

@@ -104,6 +104,39 @@
       <path d="M10 35 L10 30 L20 30 L20 38 L30 38 L30 30 L40 30 L40 38" fill="none" :stroke="color" stroke-width="1.5" opacity="0.6"/>
     </template>
 
+    <!-- 探针 -->
+    <template v-else-if="type === 'probe'">
+      <circle cx="15" cy="15" r="8" fill="none" :stroke="color" stroke-width="2"/>
+      <line x1="15" y1="7" x2="15" y2="2" :stroke="color" stroke-width="2"/>
+      <line x1="15" y1="23" x2="15" y2="28" :stroke="color" stroke-width="2"/>
+      <line x1="7" y1="15" x2="2" y2="15" :stroke="color" stroke-width="2"/>
+      <line x1="23" y1="15" x2="28" y2="15" :stroke="color" stroke-width="2"/>
+      <text x="15" y="18" text-anchor="middle" :fill="color" font-size="8">V</text>
+    </template>
+
+    <!-- 电容充放电（standalone） -->
+    <template v-else-if="type === 'capacitor-charge'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="20" text-anchor="middle" fill="#3498db" font-size="8" font-weight="bold">RC</text>
+      <!-- 电容符号 -->
+      <line x1="15" y1="28" x2="15" y2="38" :stroke="color" stroke-width="2.5"/>
+      <line x1="20" y1="28" x2="20" y2="38" :stroke="color" stroke-width="2.5"/>
+      <!-- 充电图标 -->
+      <path d="M28 33 Q33 28 38 33 Q43 38 48 33" fill="none" :stroke="color" stroke-width="1.5" opacity="0.7"/>
+    </template>
+
+    <!-- 三极管开关（standalone） -->
+    <template v-else-if="type === 'transistor-switch'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <!-- NPN符号 -->
+      <circle cx="25" cy="25" r="14" fill="none" :stroke="color" stroke-width="1.5"/>
+      <line x1="18" y1="25" x2="24" y2="25" :stroke="color" stroke-width="3"/>
+      <line x1="24" y1="18" x2="24" y2="32" :stroke="color" stroke-width="2"/>
+      <line x1="24" y1="25" x2="35" y2="35" :stroke="color" stroke-width="2"/>
+      <polygon points="35,35 31,31 33,37" :fill="color"/>
+      <line x1="24" y1="25" x2="35" y2="15" :stroke="color" stroke-width="2"/>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

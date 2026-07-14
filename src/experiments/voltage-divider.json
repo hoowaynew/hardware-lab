@@ -1,0 +1,103 @@
+{
+  "id": "voltage-divider",
+  "topic_id": "analog-001",
+  "title": "分压器：Vout = Vin × R2/(R1+R2)",
+  "category": "analog",
+  "difficulty": "beginner",
+  "description": "调节R1/R2阻值，观察分压输出。给ADC采样供电时要小心！",
+  "canvas": {
+    "width": 400,
+    "height": 260,
+    "components": [
+      {
+        "type": "power",
+        "id": "V1",
+        "x": 60,
+        "y": 130,
+        "label": "5V",
+        "voltage": 5
+      },
+      {
+        "type": "resistor",
+        "id": "R1",
+        "x": 160,
+        "y": 80,
+        "label": "R1",
+        "value": 1000
+      },
+      {
+        "type": "resistor",
+        "id": "R2",
+        "x": 260,
+        "y": 160,
+        "label": "R2",
+        "value": 1000
+      },
+      {
+        "type": "ground",
+        "id": "GND1",
+        "x": 340,
+        "y": 200,
+        "label": "GND"
+      },
+      {
+        "type": "probe",
+        "id": "P1",
+        "x": 210,
+        "y": 130,
+        "label": "Vout探针"
+      }
+    ],
+    "wires": [
+      { "from": "V1.+", "to": "R1.1" },
+      { "from": "R1.2", "to": "R2.1" },
+      { "from": "R2.2", "to": "GND1.gnd" },
+      { "from": "V1.-", "to": "GND1.gnd" },
+      { "from": "R1.2", "to": "P1.probe" }
+    ]
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "target": "R1",
+      "property": "R1_value",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Ω",
+      "label": "R1（上分压电阻）"
+    },
+    {
+      "type": "slider",
+      "target": "R2",
+      "property": "R2_value",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Ω",
+      "label": "R2（下分压电阻）"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "vout > 3.3",
+      "type": "VD_ADC_OVERVOLTAGE",
+      "title": "ADC输入过压！⚠️",
+      "explanation": "Vout = {vout}V 超过STM32 ADC最大输入3.3V，可能损坏引脚。\n建议增大R1或减小R2。",
+      "article_ref": "analog-001"
+    },
+    {
+      "condition": "r1 + r2 < 500 && current > 10",
+      "type": "VD_HIGH_CURRENT",
+      "title": "功耗过大！🔥",
+      "explanation": "总阻值{totalR}Ω，电流{current}mA，静态功耗{power}mW。\n分压器应使用kΩ级电阻降低功耗。",
+      "article_ref": "analog-001"
+    }
+  ],
+  "targets": {
+    "perfect": "Vout ≤ 3.3V 且 静态功耗 < 10mW",
+    "hint": "Vout = Vin × R2/(R1+R2)，注意别超3.3V"
+  }
+}

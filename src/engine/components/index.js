@@ -127,6 +127,39 @@ const componentDefs = {
       shape: 'scope',
       color: '#2c3e50'
     }
+  },
+  probe: {
+    type: 'probe',
+    label: '探针',
+    icon: '📌',
+    pins: ['probe'],
+    svg: {
+      width: 30, height: 30,
+      shape: 'probe',
+      color: '#e91e63'
+    }
+  },
+  'capacitor-charge': {
+    type: 'capacitor-charge',
+    label: 'RC充放电',
+    icon: '🔋',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'capacitor-charge',
+      color: '#3498db'
+    }
+  },
+  'transistor-switch': {
+    type: 'transistor-switch',
+    label: '三极管开关',
+    icon: '🔘',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'transistor-switch',
+      color: '#e67e22'
+    }
   }
 }
 

@@ -1,0 +1,77 @@
+{
+  "id": "capacitor-charge",
+  "topic_id": "timing-004",
+  "title": "电容充放电：τ = RC 时间常数",
+  "category": "analog",
+  "difficulty": "beginner",
+  "description": "调节R和C，观察充电曲线。τ=RC决定充电速度，5τ≈充满",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "capacitor-charge",
+        "id": "CC1",
+        "x": 200,
+        "y": 140,
+        "label": "RC充放电",
+        "defaultR": 1000,
+        "defaultC": 100,
+        "defaultVoltage": 5
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "ccResistance",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Ω",
+      "label": "电阻 R"
+    },
+    {
+      "type": "slider",
+      "property": "ccCapacitance",
+      "min": 10,
+      "max": 1000,
+      "step": 10,
+      "default": 100,
+      "unit": "μF",
+      "label": "电容 C"
+    },
+    {
+      "type": "slider",
+      "property": "ccVoltage",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "default": 5,
+      "unit": "V",
+      "label": "电源电压"
+    },
+    {
+      "type": "toggle",
+      "property": "ccMode",
+      "values": ["charge", "discharge"],
+      "labels": ["充电", "放电"],
+      "label": "充/放电模式"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "tau > 10",
+      "type": "CC_SLOW_CHARGE",
+      "title": "充电太慢了！⏱️",
+      "explanation": "τ = RC = {tau}s，5τ = {fiveTau}s 才能充满。\n如果需要快速响应，减小R或C。",
+      "article_ref": "timing-004"
+    }
+  ],
+  "targets": {
+    "perfect": "理解τ=RC，观察充放电曲线",
+    "hint": "τ=RC，63%充电在1τ，99%充电在5τ"
+  }
+}

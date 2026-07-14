@@ -1,0 +1,92 @@
+{
+  "id": "transistor-switch",
+  "topic_id": "circuit-001",
+  "title": "三极管开关：用小电流控制大电流",
+  "category": "circuit",
+  "difficulty": "intermediate",
+  "description": "调节基极电阻，观察三极管导通/截止/放大区切换。配错了烧管子！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "transistor-switch",
+        "id": "TS1",
+        "x": 200,
+        "y": 140,
+        "label": "NPN三极管",
+        "defaultRb": 1000,
+        "defaultRc": 220,
+        "defaultVcc": 5,
+        "defaultBeta": 100
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "tsBaseResistor",
+      "min": 100,
+      "max": 50000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Ω",
+      "label": "基极电阻 Rb"
+    },
+    {
+      "type": "slider",
+      "property": "tsCollectorResistor",
+      "min": 100,
+      "max": 2000,
+      "step": 10,
+      "default": 220,
+      "unit": "Ω",
+      "label": "集电极电阻 Rc"
+    },
+    {
+      "type": "slider",
+      "property": "tsVcc",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 5,
+      "unit": "V",
+      "label": "电源 Vcc"
+    },
+    {
+      "type": "toggle",
+      "property": "tsInputHigh",
+      "values": [true, false],
+      "labels": ["高电平(ON)", "低电平(OFF)"],
+      "label": "输入信号"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "ib > 20",
+      "type": "TS_BASE_OVERCURRENT",
+      "title": "基极电流过大！💥",
+      "explanation": "Ib = {ib}mA 超过三极管基极额定电流。\n增大Rb限制基极电流。",
+      "article_ref": "circuit-001"
+    },
+    {
+      "condition": "ic > 500",
+      "type": "TS_COLLECTOR_OVERCURRENT",
+      "title": "集电极电流过大！💥",
+      "explanation": "Ic = {ic}mA 超过三极管集电极额定电流。\n检查Vcc/Rc配比和β值。",
+      "article_ref": "circuit-001"
+    },
+    {
+      "condition": "power > 500",
+      "type": "TS_POWER_DISSIPATION",
+      "title": "功耗过大！🔥",
+      "explanation": "P = Vce × Ic = {power}mW 超过500mW。\n三极管可能过热损坏。",
+      "article_ref": "circuit-001"
+    }
+  ],
+  "targets": {
+    "perfect": "工作在饱和区(开关ON)或截止区(开关OFF)，无过流/过功耗",
+    "hint": "饱和区: Ib > Ic/β；截止区: Vbe < 0.7V"
+  }
+}

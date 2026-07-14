@@ -27,7 +27,21 @@ export class Simulator {
     this.errors = []
     this.powerSources = []
     this.grounds = []
-    this.context = { ...userState }
+    // Flatten userState: strip "TARGET_" prefix from keys like "PA0_gpioMode" -> "gpioMode"
+    const flatState = {}
+    for (const [key, val] of Object.entries(userState)) {
+      const dotIdx = key.indexOf('_')
+      if (dotIdx > 0) {
+        const prefix = key.substring(0, dotIdx)
+        const suffix = key.substring(dotIdx + 1)
+        // If prefix matches a component id, use suffix as the context key
+        const isComponentId = canvas.components.some(c => c.id === prefix)
+        flatState[isComponentId ? suffix : key] = val
+      } else {
+        flatState[key] = val
+      }
+    }
+    this.context = { ...flatState }
 
     // 1. 构建拓扑
     this.topology.build(canvas)
@@ -143,6 +157,63 @@ export class Simulator {
         })
       }
     }
+
+    // 分压器：检测是否有两个电阻串联并计算分压点电压
+    this._checkVoltageDivider(loadComponents, voltage, current)
+  }
+
+  /**
+   * 分压器检测与计算
+   * 如果路径上有R1+R2串联，计算R2上的分压
+   */
+  _checkVoltageDivider(loadComponents, voltage, current) {
+    const resistors = loadComponents.filter(c => c.type === 'resistor')
+    if (resistors.length === 2) {
+      const r1 = resistors[0]
+      const r2 = resistors[1]
+      const r1Val = this.context[`${r1.id}_value`] || r1.value || 1000
+      const r2Val = this.context[`${r2.id}_value`] || r2.value || 1000
+      const vout = voltage * r2Val / (r1Val + r2Val)
+      const totalR = r1Val + r2Val
+      const powerMW = voltage * voltage / totalR * 1000
+
+      // 将分压结果存到context供探针和错误检测使用
+      this.context.vout = vout
+      this.context.r1 = r1Val
+      this.context.r2 = r2Val
+      this.context.current = current
+      this.context.power = powerMW
+      this.context.totalR = totalR
+
+      // 分压器错误检测
+      if (vout > 3.3) {
+        this.errors.push({
+          type: 'VD_ADC_OVERVOLTAGE',
+          componentId: r2.id,
+          title: 'ADC输入过压! ⚠️',
+          explanation: `Vout = ${vout.toFixed(2)}V 超过STM32 ADC最大输入3.3V，可能损坏引脚。\n建议增大R1或减小R2。`,
+          vout: vout
+        })
+      }
+      if (totalR < 500 && current > 10) {
+        this.errors.push({
+          type: 'VD_HIGH_CURRENT',
+          componentId: r1.id,
+          title: '功耗过大! 🔥',
+          explanation: `总阻值${totalR}Ω，电流${current.toFixed(1)}mA，静态功耗${powerMW.toFixed(0)}mW。\n分压器应使用kΩ级电阻降低功耗。`,
+          totalR: totalR,
+          current: current,
+          power: powerMW
+        })
+      }
+
+      // 更新R2的结果包含分压信息
+      const r2Result = this.results.get(r2.id)
+      if (r2Result) {
+        r2Result.vout = vout
+        r2Result.voltage = vout
+      }
+    }
   }
 
   /**
@@ -152,6 +223,8 @@ export class Simulator {
     const handlers = {
       gpio: () => this._simulateGPIO(comp),
       pwm: () => this._simulatePWM(comp),
+      'capacitor-charge': () => this._simulateCapacitorCharge(comp),
+      'transistor-switch': () => this._simulateTransistorSwitch(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -380,15 +453,15 @@ export class Simulator {
 
     // 舵机负载
     if (loadType === 'servo') {
-      // 舵机需要20ms周期 (50Hz)，2.5ms=180°，0.5ms=0°
+      // 舵机需要20ms周期 (50Hz), 2.5ms=180, 0.5ms=0
       const servoFreq = 50
       if (frequency !== servoFreq) {
         results.loadState = 'error'
         results.error = 'PWM_SERVO_FREQ'
-        results.errorTitle = '舵机不动了！⚙️',
-        results.errorExplanation = `舵机需要50Hz（20ms周期）信号。\n当前频率 ${frequency}Hz，舵机无法识别。`
+        results.errorTitle = '舵机不动了! ⚙️',
+        results.errorExplanation = `舵机需要50Hz(20ms周期)信号.\n当前频率 ${frequency}Hz, 舵机无法识别.`
       } else {
-        // 从占空比推算角度 (0.5ms~2.5ms → 0°~180°)
+        // 从占空比推算角度 (0.5ms~2.5ms -> 0~180)
         const pulseWidth = dutyCycle / 100 * 20 // ms
         const angle = Math.max(0, Math.min(180, (pulseWidth - 0.5) / 2 * 180))
         results.loadState = 'running'
@@ -406,10 +479,151 @@ export class Simulator {
     if (loadType === 'servo' && dutyCycle === 100) {
       results.loadState = 'error'
       results.error = 'PWM_SERVO_100'
-      results.errorTitle = '舵机不动了！⚙️',
-      results.errorExplanation = '100%占空比意味着持续高电平，没有周期变化，舵机无法识别角度信号。'
+      results.errorTitle = '舵机不动了! ⚙️',
+      results.errorExplanation = '100%占空比意味着持续高电平, 没有周期变化, 舵机无法识别角度信号.'
     }
 
     return results
+  }
+
+  /**
+   * 仿真电容充放电
+   * tau = RC, V(t) = Vmax * (1 - e^(-t/tau)) charge
+   * V(t) = V0 * e^(-t/tau) discharge
+   */
+  _simulateCapacitorCharge(comp) {
+    const R = this.context.ccResistance || comp.defaultR || 1000
+    const C = this.context.ccCapacitance || comp.defaultC || 100 // uF
+    const Vmax = this.context.ccVoltage || comp.defaultVoltage || 5
+    const mode = this.context.ccMode || 'charge'
+
+    // tau = RC (Ohm * uF = us, convert to s: /1000000)
+    const tau = R * C / 1000000 // seconds
+    const fiveTau = tau * 5
+
+    // generate charge/discharge curve data points
+    const points = 60
+    const curve = []
+    const totalTime = Math.max(fiveTau, 0.01)
+
+    for (let i = 0; i <= points; i++) {
+      const t = (i / points) * totalTime
+      let voltage
+      if (mode === 'charge') {
+        voltage = Vmax * (1 - Math.exp(-t / tau))
+      } else {
+        voltage = Vmax * Math.exp(-t / tau)
+      }
+      curve.push({ t: t * 1000, v: voltage }) // ms, V
+    }
+
+    const result = {
+      resistance: R,
+      capacitance: C,
+      voltage: Vmax,
+      tau: tau,
+      tauMs: tau * 1000,
+      fiveTau: fiveTau,
+      fiveTauMs: fiveTau * 1000,
+      mode: mode,
+      curve: curve,
+      loadState: 'running'
+    }
+
+    // slow charge warning
+    if (tau > 10) {
+      result.error = 'CC_SLOW_CHARGE'
+      result.errorTitle = '充电太慢了! ⏱️'
+      result.errorExplanation = `tau = RC = ${tau.toFixed(1)}s, 5tau = ${fiveTau.toFixed(1)}s to full charge.\nDecrease R or C for faster response.`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真三极管开关电路
+   * NPN: Ib -> Ic = beta*Ib (active), saturation: Ic = (Vcc-Vce_sat)/Rc
+   */
+  _simulateTransistorSwitch(comp) {
+    const Rb = this.context.tsBaseResistor || comp.defaultRb || 1000
+    const Rc = this.context.tsCollectorResistor || comp.defaultRc || 220
+    const Vcc = this.context.tsVcc || comp.defaultVcc || 5
+    const beta = comp.defaultBeta || 100
+    const inputHigh = this.context.tsInputHigh !== undefined ? this.context.tsInputHigh : true
+    const Vbe = 0.7 // base-emitter junction voltage
+    const VceSat = 0.2 // saturation voltage
+
+    let state = 'cutoff'
+    let Ib = 0
+    let Ic = 0
+    let Vce = Vcc
+    let power = 0
+
+    if (!inputHigh) {
+      // input low -> cutoff
+      state = 'cutoff'
+      Ib = 0
+      Ic = 0
+      Vce = Vcc
+    } else {
+      // input high -> calculate base current
+      Ib = (Vcc - Vbe) / Rb * 1000 // mA
+
+      // calculate saturation current
+      const IcSat = (Vcc - VceSat) / Rc * 1000 // mA
+      const IbMin = IcSat / beta
+
+      if (Ib >= IbMin) {
+        // saturation region - switch ON
+        state = 'saturation'
+        Ic = IcSat
+        Vce = VceSat
+      } else {
+        // active region
+        state = 'active'
+        Ic = Ib * beta
+        Vce = Vcc - Ic * Rc / 1000
+      }
+
+      power = Vce * Ic // mW
+    }
+
+    const result = {
+      state,
+      baseResistor: Rb,
+      collectorResistor: Rc,
+      vcc: Vcc,
+      beta,
+      inputHigh,
+      baseCurrent: Ib,
+      collectorCurrent: Ic,
+      vce: Vce,
+      power: power,
+      loadState: 'running',
+      icSat: (Vcc - VceSat) / Rc * 1000
+    }
+
+    // base overcurrent check
+    if (Ib > 20) {
+      result.error = 'TS_BASE_OVERCURRENT'
+      result.errorTitle = '基极电流过大! 💥'
+      result.errorExplanation = `Ib = ${Ib.toFixed(1)}mA exceeds base rated 20mA.\nIncrease Rb to limit base current.`
+    }
+
+    // collector overcurrent check
+    if (Ic > 500) {
+      result.error = 'TS_COLLECTOR_OVERCURRENT'
+      result.errorTitle = '集电极电流过大! 💥'
+      result.errorExplanation = `Ic = ${Ic.toFixed(1)}mA exceeds collector rated 500mA.\nCheck Vcc/Rc ratio and beta.`
+    }
+
+    // power dissipation check
+    if (power > 500) {
+      result.error = 'TS_POWER_DISSIPATION'
+      result.errorTitle = '功耗过大! 🔥'
+      result.errorExplanation = `P = Vce x Ic = ${power.toFixed(0)}mW exceeds 500mW.\nTransistor may overheat.`
+    }
+
+    return result
   }
 }

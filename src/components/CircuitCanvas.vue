@@ -114,7 +114,10 @@ const componentSizes = {
   motor: { w: 40, h: 40 },
   diode: { w: 40, h: 20 },
   gpio: { w: 50, h: 50 },
-  pwm: { w: 50, h: 50 }
+  pwm: { w: 50, h: 50 },
+  probe: { w: 30, h: 30 },
+  'capacitor-charge': { w: 50, h: 50 },
+  'transistor-switch': { w: 50, h: 50 }
 }
 
 const renderedComponents = computed(() => {
