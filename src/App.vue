@@ -28,6 +28,7 @@
           placeholder="搜索实验名称、分类、关键词…"
         />
         <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</button>
+        <button class="random-btn" @click="randomExperiment" title="随机实验">🎲</button>
       </div>
 
       <!-- 设置面板 -->
@@ -79,6 +80,18 @@
           >{{ getAchievementName(achId) }}</span>
         </div>
       </div>
+
+      <!-- 统计仪表盘 -->
+      <StatsDashboard
+        v-if="!searchQuery"
+        :categories="categories"
+        :allExperiments="allExperiments"
+        :progress="progress"
+        :errorCount="progress.errorCount"
+        :errorBySeverity="errorBySeverity"
+        @export="exportProgress"
+        @import="importProgress"
+      />
 
       <!-- 最近浏览 -->
       <div v-if="!searchQuery && recentExperiments.length > 0" class="quick-row">
@@ -483,6 +496,9 @@
         ✅ {{ successMessage }}
       </div>
     </Transition>
+
+    <!-- 首次访问引导 -->
+    <Onboarding v-if="!isEmbed" />
   </div>
 </template>
 
@@ -508,6 +524,8 @@ import WifiSignalView from './components/WifiSignalView.vue'
 import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
+import StatsDashboard from './components/StatsDashboard.vue'
+import Onboarding from './components/Onboarding.vue'
 import { knowledgeData } from './data/knowledge.js'
 import { hintsData } from './data/hints.js'
 import { useFavoritesStore } from './stores/favorites.js'
@@ -701,6 +719,89 @@ function confirmReset() {
     setTimeout(() => { showSuccessToast.value = false }, 2500)
   }
 }
+
+// 随机实验
+function randomExperiment() {
+  const pool = allExperiments.filter(e => e.id !== currentExpId.value)
+  const pick = pool[Math.floor(Math.random() * pool.length)]
+  sfx.slide()
+  loadExperiment(pick.id)
+}
+
+// 导出进度
+function exportProgress() {
+  const data = {
+    completed: progress.completed,
+    achievements: progress.achievements,
+    totalScore: progress.totalScore,
+    errorCount: progress.errorCount,
+    favorites: favorites.favorites,
+    recent: favorites.recent,
+    exportDate: new Date().toISOString()
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `hardware-lab-progress-${Date.now()}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  successMessage.value = '进度已导出 📦'
+  showSuccessToast.value = true
+  setTimeout(() => { showSuccessToast.value = false }, 2500)
+}
+
+// 导入进度
+function importProgress() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json'
+  input.onchange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target.result)
+        if (data.completed) progress.completed = data.completed
+        if (data.achievements) progress.achievements = data.achievements
+        if (data.totalScore !== undefined) progress.totalScore = data.totalScore
+        if (data.errorCount !== undefined) progress.errorCount = data.errorCount
+        progress.save()
+        if (data.favorites) {
+          favorites.favorites = data.favorites
+          localStorage.setItem('hw-lab-favorites', JSON.stringify(data.favorites))
+        }
+        if (data.recent) {
+          favorites.recent = data.recent
+          localStorage.setItem('hw-lab-recent', JSON.stringify(data.recent))
+        }
+        successMessage.value = '进度导入成功 ✅'
+        showSuccessToast.value = true
+        setTimeout(() => { showSuccessToast.value = false }, 2500)
+      } catch (err) {
+        successMessage.value = '导入失败：文件格式错误 ❌'
+        showSuccessToast.value = true
+        setTimeout(() => { showSuccessToast.value = false }, 2500)
+      }
+    }
+    reader.readAsText(file)
+  }
+  input.click()
+}
+
+// 错误分布统计
+const errorBySeverity = computed(() => {
+  let critical = 0
+  let warning = 0
+  // errorCount tracks total; estimate distribution from completed experiments
+  for (const exp of allExperiments) {
+    const c = progress.completed[exp.id]
+    if (c && !c.firstErrorFree) critical += 1
+  }
+  warning = Math.max(0, progress.errorCount - critical)
+  return { critical, warning }
+})
 
 function categoryProgress(catId) {
   const cat = categories.find(c => c.id === catId)
@@ -1096,6 +1197,17 @@ body {
   cursor: pointer;
   font-size: 14px;
   padding: 2px 4px;
+}
+.random-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: transform 0.2s;
+}
+.random-btn:hover {
+  transform: rotate(180deg);
 }
 
 /* 设置面板 */
