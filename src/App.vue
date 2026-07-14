@@ -16,7 +16,7 @@
           </button>
         </div>
       </div>
-      <p class="app-subtitle">交互式硬件原理实验平台 · 12个实验 · 11大分类</p>
+      <p class="app-subtitle">交互式硬件原理实验平台 · 18个实验 · 11大分类</p>
 
       <!-- 搜索栏 -->
       <div class="search-bar">
@@ -582,6 +582,72 @@
           </span>
         </div>
       </div>
+
+      <!-- LDO稳压器实验布局 -->
+      <div v-else-if="currentExpId === 'ldo-regulator'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <LDORegulatorView
+          :simResult="store.simResult?.results?.LDO1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 555定时器实验布局 -->
+      <div v-else-if="currentExpId === 'timer-555'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <Timer555View
+          :simResult="store.simResult?.results?.TIMER1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ESD保护实验布局 -->
+      <div v-else-if="currentExpId === 'esd-protection'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <ESDProtectionView
+          :simResult="store.simResult?.results?.ESD1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -668,6 +734,9 @@ import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
 import DCDCBuckView from './components/DCDCBuckView.vue'
 import OpAmpComparatorView from './components/OpAmpComparatorView.vue'
 import ButtonDebounceView from './components/ButtonDebounceView.vue'
+import LDORegulatorView from './components/LDORegulatorView.vue'
+import Timer555View from './components/Timer555View.vue'
+import ESDProtectionView from './components/ESDProtectionView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -696,6 +765,9 @@ import laConfig from './experiments/logic-analyzer-debug.json'
 import dcdcConfig from './experiments/dcdc-buck.json'
 import opampConfig from './experiments/opamp-comparator.json'
 import debounceConfig from './experiments/button-debounce.json'
+import ldoConfig from './experiments/ldo-regulator.json'
+import timerConfig from './experiments/timer-555.json'
+import esdConfig from './experiments/esd-protection.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -718,7 +790,10 @@ const allExperiments = [
   { id: 'logic-analyzer-debug', icon: '🐛', shortTitle: 'SPI调试', desc: '逻辑分析仪解码', config: laConfig },
   { id: 'dcdc-buck', icon: '⚡', shortTitle: 'DC-DC Buck', desc: '12V→5V降压转换', config: dcdcConfig, difficulty: 'intermediate' },
   { id: 'opamp-comparator', icon: '📐', shortTitle: '运放比较器', desc: '阈值检测+迟滞', config: opampConfig, difficulty: 'intermediate' },
-  { id: 'button-debounce', icon: '⏱️', shortTitle: '按键消抖', desc: '硬件vs软件消抖', config: debounceConfig, difficulty: 'beginner' }
+  { id: 'button-debounce', icon: '⏱️', shortTitle: '按键消抖', desc: '硬件vs软件消抖', config: debounceConfig, difficulty: 'beginner' },
+  { id: 'ldo-regulator', icon: '🔌', shortTitle: 'LDO稳压器', desc: '5V→3.3V热设计', config: ldoConfig, difficulty: 'intermediate' },
+  { id: 'timer-555', icon: '⏰', shortTitle: '555定时器', desc: '无稳态振荡器', config: timerConfig, difficulty: 'intermediate' },
+  { id: 'esd-protection', icon: '⚡', shortTitle: 'ESD保护', desc: 'TVS二极管钳位', config: esdConfig, difficulty: 'beginner' }
 ]
 
 const categories = [
@@ -1223,6 +1298,21 @@ const statusText = computed(() => {
     const btn = results.BTN1
     if (btn?.error) return `⚠️ ${btn.errorTitle || '消抖异常'}`
     return `${btn?.debounced ? '✅ 消抖成功' : '❌ 仍有抖动'} | ${btn?.mcuTriggerCount || 0}次触发 | 方式: ${{none:'无', rc:'RC', software:'软件'}[btn?.mode] || btn?.mode}`
+  }
+  if (currentExpId.value === 'ldo-regulator') {
+    const ldo = results.LDO1
+    if (ldo?.error) return `⚠️ ${ldo.errorTitle || 'LDO异常'}`
+    return `✅ Vout=${(ldo?.vout || 0).toFixed(2)}V | η=${(ldo?.efficiency || 0).toFixed(1)}% | Tj=${(ldo?.junctionTemp || 0).toFixed(0)}°C`
+  }
+  if (currentExpId.value === 'timer-555') {
+    const tm = results.TIMER1
+    if (tm?.error) return `⚠️ ${tm.errorTitle || '定时器异常'}`
+    return `✅ f=${(tm?.frequency || 0).toFixed(2)}kHz | D=${(tm?.dutyCycle || 0).toFixed(1)}% | T=${(tm?.period || 0).toFixed(0)}μs`
+  }
+  if (currentExpId.value === 'esd-protection') {
+    const esd = results.ESD1
+    if (esd?.error) return `⚠️ ${esd.errorTitle || 'ESD异常'}`
+    return `✅ 钳位${(esd?.clampV || 0).toFixed(1)}V | 比值${(esd?.clampingRatio || 0).toFixed(1)}× | Ipeak=${(esd?.peakCurrent || 0).toFixed(0)}A`
   }
   return '✅ 实验运行中'
 })

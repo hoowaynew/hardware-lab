@@ -1,0 +1,87 @@
+{
+  "id": "ldo-regulator",
+  "topic_id": "power-003",
+  "title": "LDO线性稳压器：5V→3.3V热设计",
+  "category": "power",
+  "difficulty": "intermediate",
+  "description": "调节输入电压、负载电流和压差，观察LDO的功耗、温升和效率。压差太小输出不稳！热阻太大芯片烧毁！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "ldo-regulator",
+        "id": "LDO1",
+        "x": 200,
+        "y": 140,
+        "label": "LDO稳压器",
+        "defaultVin": 5,
+        "defaultVout": 3.3,
+        "defaultLoadCurrent": 300,
+        "defaultThetaJA": 65,
+        "defaultMaxTj": 125
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "ldoVin",
+      "min": 3.5,
+      "max": 12,
+      "step": 0.1,
+      "default": 5,
+      "unit": "V",
+      "label": "输入电压 Vin"
+    },
+    {
+      "type": "slider",
+      "property": "ldoLoadCurrent",
+      "min": 10,
+      "max": 1000,
+      "step": 10,
+      "default": 300,
+      "unit": "mA",
+      "label": "负载电流"
+    },
+    {
+      "type": "slider",
+      "property": "ldoThetaJA",
+      "min": 30,
+      "max": 150,
+      "step": 5,
+      "default": 65,
+      "unit": "°C/W",
+      "label": "热阻 θJA"
+    },
+    {
+      "type": "slider",
+      "property": "ldoAmbient",
+      "min": -20,
+      "max": 70,
+      "step": 5,
+      "default": 25,
+      "unit": "°C",
+      "label": "环境温度"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "dropout < 0.3",
+      "type": "LDO_DROPOUT",
+      "title": "压差不足！输出失稳 ⚠️",
+      "explanation": "Vin - Vout = {dropout}V < 最小压差0.3V。\nLDO无法正常稳压，输出电压低于标称值。\n增大Vin或减小负载电流。"
+    },
+    {
+      "condition": "junctionTemp > maxTj",
+      "type": "LDO_THERMAL",
+      "title": "热关断！结温过高 ⚠️",
+      "explanation": "功耗 {powerLoss}mW，温升 {tempRise}°C，结温 {junctionTemp}°C > 上限{maxTj}°C。\n功耗 P = (Vin-Vout) × Iload\n温升 ΔT = P × θJA\n减小Vin-Iload或增加散热（减小θJA）。"
+    }
+  ],
+  "targets": {
+    "perfect": "输出3.3V±0.05V，结温<100°C，效率>50%",
+    "hint": "LDO: Vout固定，P=(Vin-Vout)×Iload，η=Vout/Vin"
+  }
+}

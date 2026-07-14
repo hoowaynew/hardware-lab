@@ -195,5 +195,60 @@ export const challengeData = {
         detail: la?.error ? `错误: ${la.errorTitle}` : `TX=${la?.dataHex} → RX=${la?.decodedHex}`
       }
     }
+  },
+
+  'ldo-regulator': {
+    title: '挑战：3.3V/500mA安全供电',
+    goal: '输出3.3V稳定，结温<100°C，效率>50%',
+    constraint: '压差≥0.3V',
+    timeLimit: 90,
+    check: (result) => {
+      const ldo = result?.results?.LDO1
+      const vout = ldo?.vout ?? 0
+      const tj = ldo?.junctionTemp ?? 999
+      const eff = ldo?.efficiency ?? 0
+      const dropoutOk = ldo?.dropoutOk ?? false
+      return {
+        passed: dropoutOk && Math.abs(vout - 3.3) < 0.05 && tj < 100 && eff > 50,
+        score: Math.max(0, 100 - Math.abs(vout - 3.3) * 200 - (tj > 100 ? (tj - 100) : 0) - (eff < 50 ? (50 - eff) : 0)),
+        detail: `Vout=${vout.toFixed(2)}V, Tj=${tj.toFixed(0)}°C, η=${eff.toFixed(1)}%`
+      }
+    }
+  },
+
+  'timer-555': {
+    title: '挑战：1kHz方波振荡器',
+    goal: '频率1kHz±10%，占空比50-60%',
+    constraint: 'Ra≥1kΩ',
+    timeLimit: 60,
+    check: (result) => {
+      const tm = result?.results?.TIMER1
+      const freq = tm?.frequency ?? 0
+      const duty = tm?.dutyCycle ?? 100
+      const ra = tm?.ra ?? 0
+      return {
+        passed: ra >= 1 && Math.abs(freq - 1) < 0.1 && duty >= 50 && duty <= 60,
+        score: Math.max(0, 100 - Math.abs(freq - 1) * 100 - Math.abs(duty - 55) * 2),
+        detail: `f=${freq.toFixed(2)}kHz, D=${duty.toFixed(1)}%, Ra=${ra}kΩ`
+      }
+    }
+  },
+
+  'esd-protection': {
+    title: '挑战：3.3V信号线ESD防护',
+    goal: 'Vwm>3.3V，钳位比<2.5，芯片安全',
+    constraint: 'Vc < 芯片耐压6.6V',
+    timeLimit: 60,
+    check: (result) => {
+      const esd = result?.results?.ESD1
+      const vwm = esd?.vwm ?? 0
+      const ratio = esd?.clampingRatio ?? 99
+      const chipOk = esd?.chipOk ?? false
+      return {
+        passed: vwm > 3.3 && ratio < 2.5 && chipOk,
+        score: Math.max(0, 100 - (ratio < 2.5 ? 0 : (ratio - 2.5) * 50) - (chipOk ? 0 : 50)),
+        detail: `Vwm=${vwm.toFixed(1)}V, 钳位比=${ratio.toFixed(1)}×, 芯片=${chipOk ? '安全' : '损坏'}`
+      }
+    }
   }
 }

@@ -310,5 +310,73 @@ export const knowledgeData = {
       '软件消抖推荐：定时器轮询 + 状态机，不用delay阻塞',
       'STM32可利用EXTI + 定时器实现硬件辅助消抖'
     ]
+  },
+
+  'ldo-regulator': {
+    title: 'LDO线性稳压器原理',
+    formulas: [
+      { label: '功耗', expr: 'P = (Vin - Vout) × Iload' },
+      { label: '效率', expr: 'η = Vout / Vin × 100%' },
+      { label: '结温', expr: 'Tj = Ta + P × θJA' },
+      { label: '最小压差', expr: 'Vin - Vout ≥ Vdropout (典型0.3V)' }
+    ],
+    concepts: [
+      'LDO = 低压差线性稳压器，内部用误差放大器+调整管控制输出',
+      '效率 η = Vout/Vin，压差越大效率越低（多余能量全变热）',
+      '功耗 P = (Vin-Vout)×Iload 全部转化为热量',
+      '结温 Tj = 环境温度 + 功耗×热阻，超过125°C触发热关断',
+      'Dropout电压：LDO能正常稳压的最小Vin-Vout差值'
+    ],
+    tips: [
+      'AMS1117-3.3 dropout约1.1V，5V→3.3V勉强可用，3.6V就不行',
+      '低压差LDO(如TLV7333)dropout仅0.1V，3.5V就能输出3.3V',
+      '热阻θJA：SOT-23约300°C/W(不加散热)，SOT-89约150°C/W',
+      'LDO vs Buck：LDO简单低噪但效率低，Buck高效但复杂有纹波'
+    ]
+  },
+
+  'timer-555': {
+    title: '555定时器无稳态振荡',
+    formulas: [
+      { label: '频率', expr: 'f = 1.44 / ((Ra + 2Rb) × C)' },
+      { label: '占空比', expr: 'D = (Ra + Rb) / (Ra + 2Rb)' },
+      { label: '高电平时间', expr: 'tH = 0.693 × (Ra + Rb) × C' },
+      { label: '低电平时间', expr: 'tL = 0.693 × Rb × C' }
+    ],
+    concepts: [
+      '555定时器：通用定时芯片，可做无稳态/单稳态/双稳态三种模式',
+      '无稳态：不需触发，上电即振荡，输出连续方波',
+      '电容通过Ra+Rb充电（tH），通过Rb放电（tL）',
+      '占空比始终>50%，因为充电经过Ra+Rb而放电只经过Rb',
+      'Ra=0时放电管直接对地短路，过流损坏芯片'
+    ],
+    tips: [
+      '标准555最高频率约500kHz，CMOS版(TLC555)可达2MHz',
+      '要50%占空比：用两个二极管分离充放电路径',
+      'C取10nF~100μF，R取1kΩ~10MΩ，频率范围0.001Hz~500kHz',
+      '555电源范围宽(TTL版4.5~16V)，CMOS版2~18V'
+    ]
+  },
+
+  'esd-protection': {
+    title: 'ESD保护与TVS二极管',
+    formulas: [
+      { label: '钳位电压', expr: 'Vc = Vwm + ΔV (TVS datasheet)' },
+      { label: '峰值电流', expr: 'Ipp = VESD / Zsource (330Ω IEC模型)' },
+      { label: '钳位比', expr: 'Ratio = Vc / Vwm (应 < 3)' }
+    ],
+    concepts: [
+      'ESD(静电放电)：人体可带±15kV静电，接触瞬间释放8kV脉冲',
+      'IEC 61000-4-2标准：330Ω/150pF模型，±8kV接触放电',
+      'TVS二极管：反向击穿钳位，ns级响应，比压敏电阻快100倍',
+      'TVS工作电压Vwm > 信号最高电压，否则正常工作就导通',
+      '钳位电压Vc：ESD事件时TVS将电压限制到Vc，保护后级芯片'
+    ],
+    tips: [
+      'TVS选型：Vwm > 信号最高电压，Vc < 芯片最大耐受电压',
+      'USB2.0 D+/D- 用Vwm=5V TVS，CAN总线用Vwm=24V TVS',
+      '双向TVS用于交流信号，单向TVS用于直流信号线',
+      '芯片内部ESD保护仅±2kV(HBM)，远不够IEC标准'
+    ]
   }
 }

@@ -259,6 +259,39 @@ const componentDefs = {
       shape: 'button-debounce',
       color: '#f39c12'
     }
+  },
+  'ldo-regulator': {
+    type: 'ldo-regulator',
+    label: 'LDO稳压器',
+    icon: '🔌',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'ldo-regulator',
+      color: '#e74c3c'
+    }
+  },
+  'timer-555': {
+    type: 'timer-555',
+    label: '555定时器',
+    icon: '⏰',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'timer-555',
+      color: '#9b59b6'
+    }
+  },
+  'esd-protection': {
+    type: 'esd-protection',
+    label: 'ESD保护',
+    icon: '⚡',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'esd-protection',
+      color: '#f39c12'
+    }
   }
 }
 

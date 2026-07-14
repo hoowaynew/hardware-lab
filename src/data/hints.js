@@ -77,5 +77,23 @@ export const hintsData = {
     '机械按键有5-20ms抖动，需要硬件或软件消抖',
     'RC消抖: τ=RC > 抖动时间；软件消抖: delay(20ms)后再次读取',
     '答案：选RC消抖 R=10kΩ C=1μF(τ=10ms>抖动)，或软件消抖delay=20ms'
+  ],
+
+  'ldo-regulator': [
+    'LDO的功耗全部变成热量，想想P=(Vin-Vout)×Iload',
+    '结温Tj=环境温度+P×θJA，超过125°C就热关断',
+    '答案：5V→3.3V/300mA，P=(5-3.3)×0.3=0.51W，θJA=65°C/W → Tj=25+0.51×65=58°C ✓'
+  ],
+
+  'timer-555': [
+    '555无稳态频率由Ra、Rb、C决定',
+    'f=1.44/((Ra+2Rb)×C)，占空比D=(Ra+Rb)/(Ra+2Rb)',
+    '答案：Ra=10kΩ Rb=47kΩ C=10nF → f≈1.06kHz，D≈56%，接近1kHz目标 ✓'
+  ],
+
+  'esd-protection': [
+    'TVS工作电压Vwm必须大于信号最高电压，否则正常工作时就导通',
+    '钳位电压Vc越低越好，Vc/Vwm比值应<3',
+    '答案：3.3V信号线选Vwm=5V TVS，Vc=9.8V → 钳位比1.96× < 3 ✓，芯片IO耐压6.6V < Vc=9.8V需更低Vc'
   ]
 }

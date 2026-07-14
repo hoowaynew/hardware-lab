@@ -1,0 +1,81 @@
+{
+  "id": "timer-555",
+  "topic_id": "timing-002",
+  "title": "555定时器：无稳态振荡器设计",
+  "category": "timing",
+  "difficulty": "intermediate",
+  "description": "调节Ra、Rb、C三个参数，观察555振荡器的频率、占空比和波形。Ra=0会烧芯片！占空比无法低于50%！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "timer-555",
+        "id": "TIMER1",
+        "x": 200,
+        "y": 140,
+        "label": "NE555",
+        "defaultRa": 10,
+        "defaultRb": 47,
+        "defaultC": 10
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "timerRa",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "default": 10,
+      "unit": "kΩ",
+      "label": "电阻 Ra"
+    },
+    {
+      "type": "slider",
+      "property": "timerRb",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "default": 47,
+      "unit": "kΩ",
+      "label": "电阻 Rb"
+    },
+    {
+      "type": "slider",
+      "property": "timerC",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "default": 10,
+      "unit": "nF",
+      "label": "电容 C"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "ra <= 0",
+      "type": "TIMER_RA_ZERO",
+      "title": "Ra过小！芯片过流 ⚠️",
+      "explanation": "Ra接近0时，放电管导通期间电流仅受Ra限制。\nI = Vcc/Ra，电流过大会烧毁555内部放电管。\nRa至少1kΩ。"
+    },
+    {
+      "condition": "dutyCycle > 90",
+      "type": "TIMER_DUTY_HIGH",
+      "title": "占空比过高 ⚠️",
+      "explanation": "占空比 = (Ra+Rb)/(Ra+2Rb) = {dutyCycle}%。\n555无稳态模式占空比始终>50%。\n要接近50%需Ra<<Rb，但Ra不能为0。"
+    },
+    {
+      "condition": "frequency > 500",
+      "type": "TIMER_FREQ_HIGH",
+      "title": "频率过高！波形失真 ⚠️",
+      "explanation": "频率 {frequency}kHz，标准555上限约500kHz。\n高频时内部比较器延迟导致周期不准。\n增大R或C降低频率。"
+    }
+  ],
+  "targets": {
+    "perfect": "频率1kHz±10%，占空比50-60%",
+    "hint": "f=1.44/((Ra+2Rb)×C)，D=(Ra+Rb)/(Ra+2Rb)"
+  }
+}

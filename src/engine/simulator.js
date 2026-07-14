@@ -234,6 +234,9 @@ export class Simulator {
       'dcdc-buck': () => this._simulateDCDCBuck(comp),
       'opamp-comparator': () => this._simulateOpAmp(comp),
       'button-debounce': () => this._simulateButtonDebounce(comp),
+      'ldo-regulator': () => this._simulateLDO(comp),
+      'timer-555': () => this._simulateTimer555(comp),
+      'esd-protection': () => this._simulateESD(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -1414,6 +1417,143 @@ export class Simulator {
       result.error = 'BTN_SW_DELAY_SHORT'
       result.errorTitle = '软件延时太短！仍有抖动 ⚠️'
       result.errorExplanation = `延时${swDelay}ms < 抖动时间${bounceTime}ms。\n消抖延时必须大于抖动时间，通常取20ms。`
+    }
+
+    return result
+  }
+
+  /**
+   * LDO线性稳压器仿真
+   */
+  _simulateLDO(comp) {
+    const vin = this.context.ldoVin ?? comp.defaultVin ?? 5
+    const vout = comp.defaultVout ?? 3.3
+    const loadCurrent = (this.context.ldoLoadCurrent ?? comp.defaultLoadCurrent ?? 300) / 1000 // mA → A
+    const thetaJA = this.context.ldoThetaJA ?? comp.defaultThetaJA ?? 65
+    const ambient = this.context.ldoAmbient ?? 25
+    const maxTj = comp.defaultMaxTj ?? 125
+    const minDropout = 0.3 // 典型LDO最小压差
+
+    const dropout = vin - vout
+    const dropoutOk = dropout >= minDropout
+    const effectiveVout = dropoutOk ? vout : vin - minDropout * 0.5 // 失稳时估算
+
+    const powerLossW = (vin - effectiveVout) * loadCurrent // W
+    const powerLoss = powerLossW * 1000 // mW
+    const tempRise = powerLossW * thetaJA
+    const junctionTemp = ambient + tempRise
+    const efficiency = vin > 0 ? (effectiveVout / vin) * 100 : 0
+
+    const result = {
+      vin, vout: effectiveVout, dropout, dropoutOk,
+      powerLoss, efficiency, junctionTemp, tempRise,
+      ambient, maxTj, thetaJA,
+      loadCurrent: loadCurrent * 1000,
+      loadState: 'running'
+    }
+
+    if (!dropoutOk) {
+      result.error = 'LDO_DROPOUT'
+      result.errorTitle = '压差不足！输出失稳 ⚠️'
+      result.errorExplanation = `Vin - Vout = ${dropout.toFixed(2)}V < 最小压差${minDropout}V。\nLDO无法正常稳压，输出电压低于标称值${vout}V。\n增大Vin或减小负载电流。`
+    } else if (junctionTemp > maxTj) {
+      result.error = 'LDO_THERMAL'
+      result.errorTitle = '热关断！结温过高 ⚠️'
+      result.errorExplanation = `功耗${powerLoss.toFixed(0)}mW，温升${tempRise.toFixed(0)}°C，结温${junctionTemp.toFixed(0)}°C > 上限${maxTj}°C。\n功耗 P = (Vin-Vout) × Iload\n温升 ΔT = P × θJA\n减小Vin-Iload或增加散热（减小θJA）。`
+    }
+
+    return result
+  }
+
+  /**
+   * 555定时器无稳态振荡器仿真
+   */
+  _simulateTimer555(comp) {
+    const ra = this.context.timerRa ?? comp.defaultRa ?? 10 // kΩ
+    const rb = this.context.timerRb ?? comp.defaultRb ?? 47 // kΩ
+    const c = (this.context.timerC ?? comp.defaultC ?? 10) * 1e-9 // nF → F
+
+    const raOhms = ra * 1000
+    const rbOhms = rb * 1000
+
+    // 555无稳态公式
+    const highTime = 0.693 * (raOhms + rbOhms) * c // 秒
+    const lowTime = 0.693 * rbOhms * c
+    const period = highTime + lowTime
+    const frequency = 1 / period // Hz
+    const frequencyKHz = frequency / 1000
+    const dutyCycle = (raOhms + rbOhms) / (raOhms + 2 * rbOhms) * 100
+
+    const result = {
+      ra, rb, c: c * 1e9, // 转回nF显示
+      frequency: frequencyKHz,
+      period: period * 1e6, // → μs
+      dutyCycle,
+      highTime: highTime * 1e6, // → μs
+      lowTime: lowTime * 1e6,
+      loadState: 'running'
+    }
+
+    if (ra <= 1) {
+      result.error = 'TIMER_RA_ZERO'
+      result.errorTitle = 'Ra过小！芯片过流 ⚠️'
+      result.errorExplanation = `Ra=${ra}kΩ，放电管导通期间电流 I=Vcc/Ra=${(5/(ra*1000)*1000).toFixed(1)}mA。\n555放电管最大电流约200mA，过大会烧毁。\nRa至少1kΩ。`
+    } else if (frequencyKHz > 500) {
+      result.error = 'TIMER_FREQ_HIGH'
+      result.errorTitle = '频率过高！波形失真 ⚠️'
+      result.errorExplanation = `频率${frequencyKHz.toFixed(1)}kHz，标准555上限约500kHz。\n高频时内部比较器延迟导致周期不准。\n增大R或C降低频率。`
+    } else if (dutyCycle > 90) {
+      result.error = 'TIMER_DUTY_HIGH'
+      result.errorTitle = '占空比过高 ⚠️'
+      result.errorExplanation = `占空比=${dutyCycle.toFixed(1)}%。\n555无稳态模式占空比始终>50%。\n要接近50%需Ra<<Rb，但Ra不能为0。`
+    }
+
+    return result
+  }
+
+  /**
+   * ESD保护电路仿真
+   */
+  _simulateESD(comp) {
+    const vwm = this.context.esdVwm ?? comp.defaultVwm ?? 5
+    const vc = this.context.esdVc ?? comp.defaultVc ?? 9.8
+    const ipp = this.context.esdIpp ?? comp.defaultIpp ?? 20
+    const esdVoltage = this.context.esdStrike ?? comp.defaultEsdVoltage ?? 8 // kV
+
+    const hasProtection = true // 始终有TVS（用户调参）
+    const signalVoltage = 3.3 // 信号线正常电压
+
+    // IEC61000-4-2 ESD模型：330Ω / 150pF
+    const sourceImpedance = 330
+    const esdVolts = esdVoltage * 1000 // kV → V
+    const peakCurrent = esdVolts / sourceImpedance // A
+
+    // 钳位电压（简化模型）
+    const clampV = vc
+    const clampingRatio = vc / vwm
+
+    // 芯片IO耐压（典型CMOS 3.3V IO最大Vcc+0.3=3.6V，但ESD耐受约Vcc*2=6.6V）
+    const chipMaxVoltage = signalVoltage * 2
+    const chipOk = clampV <= chipMaxVoltage
+
+    // 检查Vwm是否低于信号电压
+    const vwmOk = vwm >= signalVoltage
+
+    const result = {
+      hasProtection, vwm, vc, ipp, esdVoltage,
+      clampV, clampingRatio, peakCurrent, chipOk,
+      signalVoltage, esdActive: true,
+      loadState: 'running'
+    }
+
+    if (!vwmOk) {
+      result.error = 'ESD_VWM_TOO_LOW'
+      result.errorTitle = '工作电压低于信号电压 ⚠️'
+      result.errorExplanation = `TVS工作电压 Vwm=${vwm.toFixed(1)}V < 信号电压${signalVoltage}V。\n正常工作时TVS就导通了，信号被钳制。\nVwm必须大于信号最高电压。`
+    } else if (clampingRatio > 3) {
+      result.error = 'ESD_VC_TOO_HIGH'
+      result.errorTitle = '钳位电压过高 ⚠️'
+      result.errorExplanation = `钳位电压/工作电压 = ${clampingRatio.toFixed(1)}，超过3倍。\nVc=${vc.toFixed(1)}V >> Vwm=${vwm.toFixed(1)}V，芯片承受过压。\n选择Vc更低（更接近Vwm）的TVS器件。`
     }
 
     return result

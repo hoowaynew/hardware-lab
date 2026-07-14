@@ -1,0 +1,92 @@
+{
+  "id": "esd-protection",
+  "topic_id": "circuit-002",
+  "title": "ESD保护：TVS二极管钳位",
+  "category": "circuit",
+  "difficulty": "beginner",
+  "description": "选择TVS二极管参数，观察ESD静电放电时信号线的钳位电压和峰值电流。没有TVS = 芯片直接暴露在8kV静电下！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "esd-protection",
+        "id": "ESD1",
+        "x": 200,
+        "y": 140,
+        "label": "ESD保护",
+        "defaultVwm": 5,
+        "defaultVc": 9.8,
+        "defaultIpp": 20,
+        "defaultEsdVoltage": 8
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "esdVwm",
+      "min": 3.3,
+      "max": 24,
+      "step": 0.1,
+      "default": 5,
+      "unit": "V",
+      "label": "工作电压 Vwm"
+    },
+    {
+      "type": "slider",
+      "property": "esdVc",
+      "min": 6,
+      "max": 40,
+      "step": 0.1,
+      "default": 9.8,
+      "unit": "V",
+      "label": "钳位电压 Vc"
+    },
+    {
+      "type": "slider",
+      "property": "esdIpp",
+      "min": 1,
+      "max": 50,
+      "step": 1,
+      "default": 20,
+      "unit": "A",
+      "label": "峰值电流 Ipp"
+    },
+    {
+      "type": "slider",
+      "property": "esdStrike",
+      "min": 2,
+      "max": 15,
+      "step": 1,
+      "default": 8,
+      "unit": "kV",
+      "label": "ESD电压"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "hasProtection === false",
+      "type": "ESD_NO_PROTECTION",
+      "title": "无ESD保护！芯片裸露 ⚠️",
+      "explanation": "无TVS二极管时，{esdVoltage}kV ESD直接打到芯片IO引脚。\n芯片内部ESD保护仅耐受±2kV(HBM)，远低于IEC61000-4-2的±8kV标准。\nIO引脚瞬间击穿，永久损坏。"
+    },
+    {
+      "condition": "clampingRatio > 3",
+      "type": "ESD_VC_TOO_HIGH",
+      "title": "钳位电压过高 ⚠️",
+      "explanation": "钳位电压/工作电压 = {clampingRatio}，超过3倍。\nVc={clampV}V >> Vwm={vwm}V，芯片承受过压。\n选择Vc更低（更接近Vwm）的TVS器件。"
+    },
+    {
+      "condition": "vwm < signalVoltage",
+      "type": "ESD_VWM_TOO_LOW",
+      "title": "工作电压低于信号电压 ⚠️",
+      "explanation": "TVS工作电压 Vwm={vwm}V < 信号电压{signalVoltage}V。\n正常工作时TVS就导通了，信号被钳制。\nVwm必须大于信号最高电压。"
+    }
+  ],
+  "targets": {
+    "perfect": "钳位电压<3×Vwm，峰值电流被吸收",
+    "hint": "TVS选型：Vwm > 信号最高电压，Vc尽量低，Ipp足够大"
+  }
+}
