@@ -104,12 +104,12 @@
       <div v-else-if="currentExpId === 'pwm-tuner'" class="experiment-content pwm-layout">
         <WaveformView
           wave-type="pwm"
-          :frequency="store.userState.pwmFrequency || 1000"
-          :dutyCycle="store.userState.pwmDutyCycle !== undefined ? store.userState.pwmDutyCycle : 50"
+          :frequency="pwmFrequency"
+          :dutyCycle="pwmDutyCycle"
         />
         <div class="pwm-load-display">
           <PwmLoadView
-            :loadType="store.userState.pwmLoad || 'led'"
+            :loadType="pwmLoadType"
             :simResult="store.simResult?.results?.PWM1"
           />
         </div>
@@ -431,6 +431,21 @@ const gpioWaveState = computed(() => {
     short: 'unstable'
   }
   return stateMap[gpio.state] || 'stable-high'
+})
+
+const pwmFrequency = computed(() => {
+  const ctx = store.simResult?.context
+  return ctx?.pwmFrequency ?? 1000
+})
+
+const pwmDutyCycle = computed(() => {
+  const ctx = store.simResult?.context
+  return ctx?.pwmDutyCycle ?? 50
+})
+
+const pwmLoadType = computed(() => {
+  const ctx = store.simResult?.context
+  return ctx?.pwmLoad ?? 'led'
 })
 </script>
 

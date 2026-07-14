@@ -78,9 +78,9 @@ const width = computed(() => props.canvas?.width || 400)
 const height = computed(() => props.canvas?.height || 200)
 
 const pinPositions = {
-  'power.+'  : { dx: 30, dy: 20 },
-  'power.-'  : { dx: 30, dy: 20 },
-  'ground.gnd': { dx: 20, dy: 15 },
+  'power.+'  : { dx: 10, dy: 20 },
+  'power.-'  : { dx: 50, dy: 20 },
+  'ground.gnd': { dx: 20, dy: 5 },
   'resistor.1': { dx: 0, dy: 12 },
   'resistor.2': { dx: 60, dy: 12 },
   'led.anode'  : { dx: 0, dy: 18 },
@@ -158,7 +158,9 @@ const renderedWires = computed(() => {
   const compMap = new Map(props.canvas.components.map(c => [c.id, c]))
 
   return props.canvas.wires.map(wire => {
-    const [fromStr, toStr] = wire
+    // Support both array format ["V1+", "R1.1"] and object format {from: "V1.+", to: "R1.1"}
+    const fromStr = Array.isArray(wire) ? wire[0] : wire.from
+    const toStr = Array.isArray(wire) ? wire[1] : wire.to
     const { compId: fromCompId, pin: fromPin } = parsePin(fromStr)
     const { compId: toCompId, pin: toPin } = parsePin(toStr)
 

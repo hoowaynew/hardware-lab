@@ -57,11 +57,13 @@ export class Topology {
   }
 
   /**
-   * 解析连线格式 ["V1+", "R1.1"] 或 ["V1.+", "R1.1"]
+   * 解析连线格式 ["V1+", "R1.1"] 或 ["V1.+", "R1.1"] 或 {from: "V1.+", to: "R1.1"}
    */
   _parseWire(wire) {
-    const from = this._normalizePin(wire[0])
-    const to = this._normalizePin(wire[1])
+    const fromRaw = Array.isArray(wire) ? wire[0] : wire.from
+    const toRaw = Array.isArray(wire) ? wire[1] : wire.to
+    const from = this._normalizePin(fromRaw)
+    const to = this._normalizePin(toRaw)
     return [from, to]
   }
 
