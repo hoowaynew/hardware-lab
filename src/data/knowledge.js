@@ -445,5 +445,74 @@ export const knowledgeData = {
       '实际LC滤波器有寄生电容/电感，高频需用SAW/晶体滤波器',
       '50Ω射频系统中，L和C的Q值决定插入损耗'
     ]
+  },
+
+  'mosfet-switch': {
+    title: 'MOSFET低边开关原理',
+    formulas: [
+      { label: '导通条件', expr: 'Vgs > Vth (阈值电压)' },
+      { label: '导通电阻', expr: 'Rds(on) = 1 / (β × (Vgs - Vth)) (线性区近似)' },
+      { label: '功耗', expr: 'P = Id² × Rds(on)' },
+      { label: '负载电流', expr: 'Id = Vcc / (Rload + Rds(on))' }
+    ],
+    concepts: [
+      'N-MOSFET低边开关：负载接Vcc→MOSFET漏极D，源极S接地',
+      '三个工作区：截止(Vgs<Vth)、线性(Vth<Vgs<Vth+2V)、完全增强(Vgs>Vth+2V)',
+      'Vgs不足时未完全导通，Rds远大于标称值，MOSFET变成电阻发热',
+      '完全增强区Rds(on)是固定小值(mΩ级)，功耗极低',
+      '逻辑级MOSFET(如IRLZ44N)Vth=1-2V，5V MCU可直接驱动'
+    ],
+    tips: [
+      '选型看Rds(on)@Vgs=4.5V(逻辑级)还是@Vgs=10V(标准级)',
+      'IRLZ44N: Rds(on)=28mΩ@Vgs=5V，驱动10A负载仅功耗0.28W',
+      'MOSFET栅极电容需要充电，高速开关需栅极驱动器提供大电流',
+      '低边开关vs高边开关：低边简单但负载不接地，高边需P-MOS或驱动IC'
+    ]
+  },
+
+  'relay-driver': {
+    title: '继电器驱动与续流保护',
+    formulas: [
+      { label: '线圈电流', expr: 'I = Vcc / Rcoil' },
+      { label: '反电动势', expr: 'Vspike = -L × di/dt (无续流时可达数百V)' },
+      { label: '续流电压', expr: 'Vf = 0.7V (二极管正向压降)' },
+      { label: '驱动管功耗', expr: 'P = Vce_sat × Ic (约0.2V×Ic)' }
+    ],
+    concepts: [
+      '继电器线圈是电感负载，电流不能突变',
+      '断电瞬间电感维持电流，产生反向高压尖峰(V=-L×di/dt)',
+      '续流二极管反向并联在线圈两端，断电时提供电流泄放回路',
+      '无续流二极管：尖峰电压可达200-500V，瞬间击穿驱动三极管',
+      '续流二极管选型：If > 线圈电流，Vrm > Vcc'
+    ],
+    tips: [
+      '常用1N4148(小继电器)或1N4007(大继电器)做续流二极管',
+      '续流二极管极性：阴极接Vcc，阳极接三极管集电极',
+      '续流使继电器释放变慢(~10ms)，需快速释放可串联电阻或用稳压管',
+      '驱动管选型：Ic > 2倍线圈电流，Vceo > Vcc(有续流时)'
+    ]
+  },
+
+  'r2r-dac': {
+    title: 'R-2R梯形DAC原理',
+    formulas: [
+      { label: '输出电压', expr: 'Vout = Vref × D / 2^n' },
+      { label: 'LSB(最小分辨)', expr: 'VLSB = Vref / 2^n' },
+      { label: '量化SNR', expr: 'SNR = 6.02n + 1.76 (dB)' },
+      { label: '每位权重', expr: 'Wi = Vref × 2^i / 2^n' }
+    ],
+    concepts: [
+      'R-2R梯形网络：只用R和2R两种阻值，每级二进制权重',
+      '从MSB到LSB，每位权重减半：Vref/2, Vref/4, Vref/8...',
+      '每位开关接Vref(bit=1)或接地(bit=0)，叠加输出',
+      '优势：只需两种阻值，精度取决于电阻匹配而非绝对值',
+      '位数越多分辨率越高，但电阻匹配要求越严格(8位需0.1%)'
+    ],
+    tips: [
+      '4位DAC：Vref=3.3V → LSB=206mV，16级输出(0~3.09V)',
+      '8位DAC：Vref=3.3V → LSB=12.9mV，256级输出',
+      '实际DAC有INL/DNL非线性误差，高位数需激光校准电阻',
+      '输出阻抗恒定为R(不论开关状态)，可直接驱动高阻负载'
+    ]
   }
 }

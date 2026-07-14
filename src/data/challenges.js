@@ -306,5 +306,65 @@ export const challengeData = {
         detail: `f₀=${(f0/1000).toFixed(1)}kHz, Q=${q.toFixed(1)}, 增益=${gain.toFixed(3)}`
       }
     }
+  },
+
+  'mosfet-switch': {
+    title: '挑战：完全导通MOSFET驱动12V/10Ω负载',
+    goal: '工作在完全增强区，功耗<500mW',
+    constraint: 'Vgs > Vth+2V，负载电流>1A',
+    timeLimit: 60,
+    check: (result) => {
+      const ph = result?.results?.M1
+      const region = ph?.region ?? 'cutoff'
+      const power = ph?.powerDissipation ?? 9999
+      const current = ph?.loadCurrent ?? 0
+      const hasError = ph?.error ? true : false
+      return {
+        passed: region === 'enhancement' && power < 500 && current > 1000 && !hasError,
+        score: Math.max(0, 100 - (region === 'enhancement' ? 0 : 40) - (power < 500 ? 0 : 20) - (current > 1000 ? 0 : 20) - (hasError ? 20 : 0)),
+        detail: `区域=${region}, 功耗=${power.toFixed(0)}mW, 电流=${current.toFixed(0)}mA`
+      }
+    }
+  },
+
+  'relay-driver': {
+    title: '挑战：安全驱动继电器',
+    goal: '续流保护开启，线圈电流<200mA，断电无尖峰',
+    constraint: '断电时Vce应力<25V',
+    timeLimit: 45,
+    check: (result) => {
+      const ph = result?.results?.RL1
+      const hasFlyback = ph?.hasFlyback ?? false
+      const coilCurrent = ph?.coilCurrent ?? 9999
+      const vceStress = ph?.vceStress ?? 0
+      const hasError = ph?.error ? true : false
+      return {
+        passed: hasFlyback && coilCurrent < 200 && vceStress < 25 && !hasError,
+        score: Math.max(0, 100 - (hasFlyback ? 0 : 40) - (coilCurrent < 200 ? 0 : 30) - (vceStress < 25 ? 0 : 30) - (hasError ? 20 : 0)),
+        detail: `续流=${hasFlyback ? '✓' : '✗'}, 线圈电流=${coilCurrent.toFixed(0)}mA, Vce应力=${vceStress.toFixed(0)}V`
+      }
+    }
+  },
+
+  'r2r-dac': {
+    title: '挑战：输出精确2V电压',
+    goal: 'Vout在1.95~2.10V之间(4位/Vref=3.3V)',
+    constraint: '无满量程警告',
+    timeLimit: 45,
+    check: (result) => {
+      const ph = result?.results?.DAC1
+      const vout = ph?.vout ?? 0
+      const bits = ph?.bits ?? 4
+      const vref = ph?.vref ?? 3.3
+      const hasError = ph?.error ? true : false
+      // 4位/3.3V: D=10 → 2.0625V (在范围内)
+      const target = 2.0
+      const inRange = vout >= 1.95 && vout <= 2.10
+      return {
+        passed: inRange && !hasError,
+        score: Math.max(0, 100 - Math.abs(vout - target) * 50 - (hasError ? 20 : 0)),
+        detail: `${bits}位/Vref=${vref}V: D=${ph?.digitalInput} → Vout=${vout.toFixed(4)}V`
+      }
+    }
   }
 }

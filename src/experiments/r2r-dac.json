@@ -1,0 +1,72 @@
+{
+  "id": "r2r-dac",
+  "topic_id": "analog-004",
+  "title": "R-2R梯形DAC：数字转模拟",
+  "category": "analog",
+  "difficulty": "advanced",
+  "description": "调节数字输入位，观察R-2R电阻网络输出模拟电压——每位权重翻倍！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "r2r-dac",
+        "id": "DAC1",
+        "x": 200,
+        "y": 140,
+        "label": "R-2R DAC",
+        "defaultVref": 3.3,
+        "defaultBits": 4,
+        "defaultDigitalInput": 10,
+        "defaultR": 10000
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "dacDigitalInput",
+      "min": 0,
+      "max": 15,
+      "step": 1,
+      "default": 10,
+      "unit": "",
+      "label": "数字输入 (0-15)"
+    },
+    {
+      "type": "select",
+      "property": "dacVref",
+      "options": [3.3, 5, 2.5],
+      "default": 3.3,
+      "label": "参考电压 Vref"
+    },
+    {
+      "type": "select",
+      "property": "dacBits",
+      "options": [4, 6, 8],
+      "default": 4,
+      "label": "DAC位数"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "vout > vref * 0.95",
+      "type": "DAC_FULLSCALE",
+      "title": "满量程输出！精度降低 ⚠️",
+      "explanation": "数字输入接近最大值，输出接近Vref。\n实际DAC有0.5LSB偏移误差，接近满量程时非线性增大。",
+      "article_ref": "analog-004"
+    },
+    {
+      "condition": "bits === 8 && digitalInput === 0",
+      "type": "DAC_ZERO_DEBUG",
+      "title": "输出为零（正常）",
+      "explanation": "数字输入全0时输出0V，这是正常状态。\n试试增加数字输入看模拟电压变化。",
+      "article_ref": "analog-004"
+    }
+  ],
+  "targets": {
+    "perfect": "数字输入=10(4位) → Vout≈2.06V (Vref=3.3V)",
+    "hint": "Vout = Vref × D / 2^n, D=数字值, n=位数"
+  }
+}

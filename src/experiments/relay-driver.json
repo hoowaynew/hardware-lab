@@ -1,0 +1,79 @@
+{
+  "id": "relay-driver",
+  "topic_id": "power-004",
+  "title": "继电器驱动：续流二极管保护",
+  "category": "power",
+  "difficulty": "intermediate",
+  "description": "驱动继电器线圈时，断电瞬间反电动势会击穿三极管——不加续流二极管就炸管！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "relay-driver",
+        "id": "RL1",
+        "x": 200,
+        "y": 140,
+        "label": "继电器驱动",
+        "defaultCoilR": 100,
+        "defaultVcc": 12,
+        "defaultHasFlyback": true,
+        "defaultFlybackVf": 0.7
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "rlCoilR",
+      "min": 20,
+      "max": 500,
+      "step": 5,
+      "default": 100,
+      "unit": "Ω",
+      "label": "线圈电阻"
+    },
+    {
+      "type": "select",
+      "property": "rlVcc",
+      "options": [5, 12, 24],
+      "default": 12,
+      "label": "电源电压 Vcc"
+    },
+    {
+      "type": "select",
+      "property": "rlHasFlyback",
+      "options": [true, false],
+      "default": true,
+      "label": "续流二极管"
+    },
+    {
+      "type": "select",
+      "property": "rlState",
+      "options": ["on", "off"],
+      "default": "on",
+      "label": "驱动状态"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "state === 'off' && !hasFlyback",
+      "type": "RELAY_FLYBACK_SPIKE",
+      "title": "反电动势尖峰！击穿三极管 💥",
+      "explanation": "线圈断电瞬间，di/dt极大，反电动势V=-L*di/dt可达数百伏。没有续流二极管泄放能量，尖峰直接加在三极管C-E极。三极管Vce耐压通常45~80V，瞬间击穿损坏。",
+      "article_ref": "power-004"
+    },
+    {
+      "condition": "coilCurrent > 200",
+      "type": "RELAY_OVERCURRENT",
+      "title": "线圈电流过大！ 🔥",
+      "explanation": "线圈电流过大超过驱动管极限200mA。增大线圈电阻或降低Vcc。I=Vcc/Rcoil",
+      "article_ref": "power-004"
+    }
+  ],
+  "targets": {
+    "perfect": "开启续流二极管，断电时无尖峰，线圈电流在安全范围",
+    "hint": "续流二极管反向并联在线圈两端，断电时提供泄放回路"
+  }
+}

@@ -13,7 +13,7 @@ npm run build    # 构建到 dist/
 npm run preview  # 预览构建结果
 ```
 
-## 21个实验 · 11大分类
+## 24个实验 · 11大分类
 
 | # | 实验 | 分类 | 难度 | 交互 | 错误触发 |
 |---|------|------|------|------|----------|
@@ -38,6 +38,9 @@ npm run preview  # 预览构建结果
 | 19 | UART串口通信 | 🔗 通信 | 🟡 进阶 | 数据/波特率/校验/匹配 | 波特率不匹配 → 乱码 |
 | 20 | 光敏电阻测光 | 📡 传感器 | 🟢 入门 | 光照/上拉/暗阻滑块 | ADC饱和/ADC过低 |
 | 21 | LC带通滤波器 | 〰️ 信号 | 🔴 高级 | L/C/R/频率滑块 | 严重失谐 → 信号被抑制 |
+| 22 | MOSFET低边开关 | 🔌 电路 | 🟡 进阶 | Vgs/Rds/负载滑块 | Vgs<Vth → 未导通；线性区发热 |
+| 23 | 继电器驱动+续流 | ⚡ 电源 | 🟡 进阶 | 线圈R/Vcc/续流开关 | 无续流二极管断电 → 击穿三极管 |
+| 24 | R-2R DAC | 📊 模拟 | 🔴 高级 | 数字输入/Vref/位数 | 接近满量程 → 精度降低 |
 
 ## 架构
 
@@ -50,21 +53,21 @@ engine/           仿真引擎核心
 experiments/      实验配置（JSON驱动，无需写代码）
 components/       Vue3 UI组件
   CircuitCanvas.vue     SVG电路画布
-  ComponentShape.vue    元件形状渲染（12+种SVG图形）
+  ComponentShape.vue    元件形状渲染（15+种SVG图形）
   WaveformView.vue      波形示波器
   InteractionPanel.vue  交互控件（滑块/点击/选择）
   ErrorPopup.vue        错误教学弹窗
   SmokeAnimation.vue    烧毁冒烟动画
   PwmLoadView.vue       PWM负载可视化
-  + 9个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖）
+  + 12个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖/LDO/555/ESD/UART/光敏/LC带通/MOSFET/继电器/R2R-DAC）
 stores/           Pinia状态管理
   experiment.js   实验状态+仿真调度
-  progress.js     进度持久化+成就系统（8个成就/15实验）
+  progress.js     进度持久化+成就系统（8个成就/24实验）
   favorites.js    收藏+最近浏览（localStorage）
 data/             知识点+提示+挑战数据
-  knowledge.js    15个实验核心公式/概念/提示
-  hints.js        15个实验3级渐进提示
-  challenges.js   15个实验挑战模式配置（目标/约束/计时/评分）
+  knowledge.js    24个实验核心公式/概念/提示
+  hints.js        24个实验3级渐进提示
+  challenges.js   24个实验挑战模式配置（目标/约束/计时/评分）
 ```
 
 ## 进度与成就系统
@@ -142,6 +145,7 @@ Cloudflare Pages 自动部署，GitHub Actions CI/CD。
 
 ## 版本历史
 
+- **v1.5** — 新增MOSFET低边开关/继电器驱动续流/R-2R DAC 3个实验，共24个实验覆盖11分类
 - **v1.4** — 新增UART串口/光敏电阻/LC带通滤波3个实验，共21个实验覆盖11分类
 - **v1.3** — 新增LDO稳压器/555定时器/ESD保护3个实验，共18个实验
 - **v1.2** — 分享卡片(Canvas生成分享图)+学习路径(15步结构化路线)+实验笔记(localStorage自动保存)

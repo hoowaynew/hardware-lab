@@ -1,0 +1,87 @@
+{
+  "id": "mosfet-switch",
+  "topic_id": "circuit-003",
+  "title": "MOSFET低边开关：驱动大功率负载",
+  "category": "circuit",
+  "difficulty": "intermediate",
+  "description": "调节栅极电压和Rds(on)，观察MOSFET开关状态——Vgs不够就发热烧管！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "mosfet-switch",
+        "id": "M1",
+        "x": 200,
+        "y": 140,
+        "label": "N-MOSFET",
+        "defaultVgs": 5,
+        "defaultVcc": 12,
+        "defaultRdsOn": 25,
+        "defaultLoadR": 10,
+        "defaultBeta": 2,
+        "defaultVth": 2.5
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "mosVgs",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "default": 5,
+      "unit": "V",
+      "label": "栅源电压 Vgs"
+    },
+    {
+      "type": "slider",
+      "property": "mosRdsOn",
+      "min": 5,
+      "max": 200,
+      "step": 1,
+      "default": 25,
+      "unit": "mΩ",
+      "label": "导通电阻 Rds(on)"
+    },
+    {
+      "type": "slider",
+      "property": "mosLoadR",
+      "min": 2,
+      "max": 50,
+      "step": 0.5,
+      "default": 10,
+      "unit": "Ω",
+      "label": "负载电阻"
+    },
+    {
+      "type": "select",
+      "property": "mosVcc",
+      "options": [5, 12, 24],
+      "default": 12,
+      "label": "电源电压 Vcc"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "vgs < vth",
+      "type": "MOS_VGS_BELOW_VTH",
+      "title": "MOSFET未导通！负载不工作 ⚠️",
+      "explanation": "Vgs={vgs}V < 阈值电压Vth={vth}V，MOSFET处于截止区。\n提高栅极驱动电压使Vgs > Vth才能导通。",
+      "article_ref": "circuit-003"
+    },
+    {
+      "condition": "vgs > vth && vgs < vth + 2 && rdsActual > mosRdsOn * 10",
+      "type": "MOS_LINEAR_REGION",
+      "title": "工作在线性区！发热严重 ⚠️",
+      "explanation": "Vgs={vgs}V仅略高于Vth={vth}V，MOSFET未完全导通。\n导通电阻远大于标称Rds(on)，功耗大。\n建议Vgs至少比Vth高2V以上进入完全增强区。",
+      "article_ref": "circuit-003"
+    }
+  ],
+  "targets": {
+    "perfect": "Vgs>Vth+2V完全导通，功耗在安全范围内",
+    "hint": "完全增强: Vgs >> Vth; 功耗 P = I²×Rds(on)"
+  }
+}

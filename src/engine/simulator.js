@@ -240,6 +240,9 @@ export class Simulator {
       'uart-bus': () => this._simulateUART(comp),
       'photoresistor-sensor': () => this._simulatePhotoresistor(comp),
       'lc-bandpass': () => this._simulateLCBandpass(comp),
+      'mosfet-switch': () => this._simulateMOSFET(comp),
+      'relay-driver': () => this._simulateRelay(comp),
+      'r2r-dac': () => this._simulateR2RDAC(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -1800,6 +1803,183 @@ export class Simulator {
       result.error = 'LC_OFF_RESONANCE'
       result.errorTitle = '严重失谐！信号几乎完全被抑制 ⚠️'
       result.errorExplanation = `输入频率 ${inputFreq}Hz 偏离中心频率 ${f0Display}Hz 超过50%。\nLC带通只通过f0附近±BW/2的频率。\n调L或C使f0匹配信号频率。`
+    }
+
+    return result
+  }
+
+  /**
+   * MOSFET低边开关仿真
+   * Vgs > Vth → 导通; Rds(on)决定功耗
+   * 工作区: 截止(Vgs<Vth) / 线性(Vth<Vgs<Vth+2) / 增强(Vgs>Vth+2)
+   */
+  _simulateMOSFET(comp) {
+    const vgs = this.context.mosVgs ?? comp.defaultVgs ?? 5
+    const vcc = this.context.mosVcc ?? comp.defaultVcc ?? 12
+    const rdsOn = this.context.mosRdsOn ?? comp.defaultRdsOn ?? 25 // mΩ
+    const loadR = this.context.mosLoadR ?? comp.defaultLoadR ?? 10 // Ω
+    const vth = comp.defaultVth ?? 2.5
+    const beta = comp.defaultBeta ?? 2 // 跨导参数 (简化)
+
+    let region = 'cutoff'
+    let rdsActual = Infinity
+    let loadCurrent = 0
+    let vds = vcc
+    let powerDissipation = 0
+    let loadVoltage = 0
+
+    if (vgs < vth) {
+      region = 'cutoff'
+      rdsActual = Infinity
+      loadCurrent = 0
+      vds = vcc
+      loadVoltage = 0
+    } else if (vgs < vth + 2) {
+      // 线性区（未完全增强），简化模型
+      region = 'linear'
+      // Rds 远大于标称值
+      const overdrive = vgs - vth
+      rdsActual = rdsOn * (1 + 50 / Math.max(overdrive, 0.1)) // 近似
+      loadCurrent = vcc / (loadR + rdsActual / 1000) * 1000 // mA
+      vds = loadCurrent / 1000 * rdsActual / 1000 // V
+      loadVoltage = vcc - vds
+      powerDissipation = vds * loadCurrent // mW
+    } else {
+      // 完全增强区
+      region = 'enhancement'
+      rdsActual = rdsOn // mΩ
+      const rdsOhm = rdsOn / 1000
+      loadCurrent = vcc / (loadR + rdsOhm) * 1000 // mA
+      vds = loadCurrent / 1000 * rdsOhm // V
+      loadVoltage = vcc - vds
+      powerDissipation = vds * loadCurrent // mW
+    }
+
+    const result = {
+      vgs, vcc, rdsOn, loadR, vth, beta,
+      region, rdsActual, loadCurrent, vds,
+      loadVoltage, powerDissipation,
+      fullyOn: region === 'enhancement',
+      loadState: region === 'cutoff' ? 'stopped' : 'running'
+    }
+
+    // Vgs below threshold
+    if (vgs < vth) {
+      result.error = 'MOS_VGS_BELOW_VTH'
+      result.errorTitle = 'MOSFET未导通！负载不工作 ⚠️'
+      result.errorExplanation = `Vgs=${vgs.toFixed(1)}V < 阈值电压Vth=${vth}V，MOSFET处于截止区。\n提高栅极驱动电压使Vgs > Vth才能导通。`
+    } else if (region === 'linear') {
+      // 线性区，功耗过大
+      result.error = 'MOS_LINEAR_REGION'
+      result.errorTitle = '工作在线性区！发热严重 ⚠️'
+      result.errorExplanation = `Vgs=${vgs.toFixed(1)}V仅略高于Vth=${vth}V，MOSFET未完全导通。\n实际Rds=${(rdsActual/1000).toFixed(1)}Ω >> 标称${rdsOn}mΩ，功耗${powerDissipation.toFixed(0)}mW。\n建议Vgs至少比Vth高2V以上进入完全增强区。`
+    } else if (powerDissipation > 2000) {
+      result.error = 'MOS_POWER_HIGH'
+      result.errorTitle = '功耗过大！需散热 🔥'
+      result.errorExplanation = `P = I²×Rds(on) = ${powerDissipation.toFixed(0)}mW\n负载电流${loadCurrent.toFixed(0)}mA，Rds(on)=${rdsOn}mΩ。\n减小负载电流或选更低Rds(on)的MOSFET，需加散热片。`
+    }
+
+    return result
+  }
+
+  /**
+   * 继电器驱动电路仿真
+   * 线圈电流 I = Vcc / Rcoil
+   * 断电时反电动势 V_spike = -L * di/dt（无续流二极管时可达数百伏）
+   */
+  _simulateRelay(comp) {
+    const coilR = this.context.rlCoilR ?? comp.defaultCoilR ?? 100
+    const vcc = this.context.rlVcc ?? comp.defaultVcc ?? 12
+    const hasFlyback = this.context.rlHasFlyback ?? comp.defaultHasFlyback ?? true
+    const state = this.context.rlState ?? 'on'
+
+    const coilCurrent = vcc / coilR * 1000 // mA
+    const coilPower = vcc * coilCurrent / 1000 // mW
+
+    // 断电瞬间的反电动势估算
+    // 典型继电器线圈电感约100mH~1H，断电时间约1μs
+    // V_spike = L * di/dt ≈ L * I / t
+    const coilInductance = 0.5 // H (典型值)
+    const switchOffTime = 1e-6 // s
+    const flybackSpike = hasFlyback ? 0.7 : coilInductance * (coilCurrent / 1000) / switchOffTime
+
+    // 驱动管Vce耐压（典型8050三极管，Vceo=25V）
+    const vceMax = 25
+    const vceStress = state === 'off' && !hasFlyback ? flybackSpike : 0
+
+    const result = {
+      coilR, vcc, hasFlyback, state,
+      coilCurrent, coilPower,
+      flybackSpike: Math.min(flybackSpike, 999),
+      vceMax, vceStress,
+      flybackActive: state === 'off' && !hasFlyback,
+      loadState: state === 'on' ? 'running' : 'stopped'
+    }
+
+    // Flyback spike error
+    if (state === 'off' && !hasFlyback) {
+      result.error = 'RELAY_FLYBACK_SPIKE'
+      result.errorTitle = '反电动势尖峰！击穿三极管 💥'
+      result.errorExplanation = `线圈断电瞬间，反电动势V=-L×di/dt≈${flybackSpike.toFixed(0)}V！\n没有续流二极管泄放能量，尖峰直接加在驱动管C-E极。\n三极管Vce耐压${vceMax}V，远小于${flybackSpike.toFixed(0)}V，瞬间击穿。\n加续流二极管反向并联在线圈两端。`
+    } else if (coilCurrent > 200) {
+      result.error = 'RELAY_OVERCURRENT'
+      result.errorTitle = '线圈电流过大！ 🔥'
+      result.errorExplanation = `线圈电流 ${coilCurrent.toFixed(0)}mA 超过驱动管极限200mA。\nI = Vcc / Rcoil = ${vcc} / ${coilR} = ${coilCurrent.toFixed(0)}mA\n增大线圈电阻或降低Vcc。`
+    }
+
+    return result
+  }
+
+  /**
+   * R-2R梯形DAC仿真
+   * Vout = Vref × D / 2^n
+   * D = 数字输入值, n = 位数
+   */
+  _simulateR2RDAC(comp) {
+    const vref = this.context.dacVref ?? comp.defaultVref ?? 3.3
+    const bits = this.context.dacBits ?? comp.defaultBits ?? 4
+    const digitalInput = this.context.dacDigitalInput ?? comp.defaultDigitalInput ?? 10
+    const r = this.context.dacR ?? comp.defaultR ?? 10000 // Ω
+
+    const maxVal = Math.pow(2, bits) - 1
+    const vout = vref * digitalInput / Math.pow(2, bits)
+    const lsb = vref / Math.pow(2, bits) // 最小分辨电压
+    const dnl = 0 // 简化：理想DAC DNL=0
+    const inl = 0 // 简化：理想DAC INL=0
+    const snr = 6.02 * bits + 1.76 // dB (量化信噪比)
+    const settlingTime = bits * 0.1 // μs (简化模型)
+
+    // 生成各位的权重
+    const bitWeights = []
+    for (let i = 0; i < bits; i++) {
+      const bitVal = (digitalInput >> (bits - 1 - i)) & 1
+      const weight = vref * Math.pow(2, i) / Math.pow(2, bits)
+      bitWeights.push({ bit: bits - 1 - i, value: bitVal, weight: weight })
+    }
+
+    // 生成输出阶梯波形
+    const staircase = []
+    const totalSteps = maxVal + 1
+    for (let i = 0; i <= totalSteps; i++) {
+      const v = vref * i / Math.pow(2, bits)
+      staircase.push({ d: i, v: v })
+    }
+
+    const result = {
+      vref, bits, digitalInput, r,
+      maxVal, vout, lsb,
+      snr: parseFloat(snr.toFixed(2)),
+      settlingTime,
+      bitWeights,
+      staircase,
+      loadState: 'running'
+    }
+
+    // Near full-scale warning
+    if (digitalInput >= maxVal * 0.95) {
+      result.error = 'DAC_FULLSCALE'
+      result.errorTitle = '接近满量程！精度降低 ⚠️'
+      result.errorExplanation = `数字输入 ${digitalInput} 接近最大值 ${maxVal}。\n输出 ${vout.toFixed(3)}V 接近Vref ${vref}V。\n实际DAC接近满量程时有非线性误差，建议留10%余量。`
     }
 
     return result

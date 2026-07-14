@@ -260,6 +260,43 @@
       <text x="25" y="46" text-anchor="middle" fill="#888" font-size="5">L||C</text>
     </template>
 
+    <template v-else-if="type === 'mosfet-switch'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">MOSFET</text>
+      <!-- MOSFET简化符号 -->
+      <line x1="14" y1="30" x2="20" y2="30" :stroke="color" stroke-width="1.5"/>
+      <line x1="20" y1="24" x2="20" y2="36" :stroke="color" stroke-width="1.5"/>
+      <line x1="24" y1="26" x2="24" y2="30" :stroke="color" stroke-width="1"/>
+      <line x1="24" y1="32" x2="24" y2="36" :stroke="color" stroke-width="1"/>
+      <line x1="24" y1="28" x2="36" y2="22" :stroke="color" stroke-width="1"/>
+      <line x1="24" y1="34" x2="36" y2="40" :stroke="color" stroke-width="1"/>
+      <line x1="36" y1="40" x2="36" y2="46" :stroke="color" stroke-width="1"/>
+      <text x="25" y="48" text-anchor="middle" fill="#888" font-size="5">N-MOS</text>
+    </template>
+
+    <template v-else-if="type === 'relay-driver'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">RELAY</text>
+      <!-- 线圈+二极管符号 -->
+      <rect x="16" y="16" width="8" height="20" rx="1" fill="none" :stroke="color" stroke-width="1"/>
+      <line x1="28" y1="18" x2="34" y2="22" :stroke="color" stroke-width="1"/>
+      <polygon points="30,20 34,22 30,24" fill="none" :stroke="color" stroke-width="0.8"/>
+      <line x1="28" y1="34" x2="34" y2="38" :stroke="color" stroke-width="1"/>
+      <text x="25" y="48" text-anchor="middle" fill="#888" font-size="5">COIL+D</text>
+    </template>
+
+    <template v-else-if="type === 'r2r-dac'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">DAC</text>
+      <!-- R-2R梯形符号 -->
+      <rect x="12" y="16" width="4" height="10" rx="1" fill="none" :stroke="color" stroke-width="0.8"/>
+      <rect x="20" y="16" width="4" height="10" rx="1" fill="none" :stroke="color" stroke-width="0.8"/>
+      <rect x="28" y="16" width="4" height="10" rx="1" fill="none" :stroke="color" stroke-width="0.8"/>
+      <rect x="36" y="16" width="4" height="10" rx="1" fill="none" :stroke="color" stroke-width="0.8"/>
+      <line x1="16" y1="21" x2="36" y2="21" :stroke="color" stroke-width="0.8"/>
+      <text x="25" y="40" text-anchor="middle" :fill="color" font-size="5">R-2R</text>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

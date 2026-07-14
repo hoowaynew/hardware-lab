@@ -714,6 +714,72 @@
           </span>
         </div>
       </div>
+
+      <!-- MOSFET低边开关实验布局 -->
+      <div v-else-if="currentExpId === 'mosfet-switch'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <MOSFETSwitchView
+          :simResult="store.simResult?.results?.M1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 继电器驱动实验布局 -->
+      <div v-else-if="currentExpId === 'relay-driver'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <RelayDriverView
+          :simResult="store.simResult?.results?.RL1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- R-2R DAC实验布局 -->
+      <div v-else-if="currentExpId === 'r2r-dac'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <R2RDACView
+          :simResult="store.simResult?.results?.DAC1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -806,6 +872,9 @@ import ESDProtectionView from './components/ESDProtectionView.vue'
 import UARTView from './components/UARTView.vue'
 import PhotoresistorView from './components/PhotoresistorView.vue'
 import LCBandpassView from './components/LCBandpassView.vue'
+import MOSFETSwitchView from './components/MOSFETSwitchView.vue'
+import RelayDriverView from './components/RelayDriverView.vue'
+import R2RDACView from './components/R2RDACView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -840,6 +909,9 @@ import esdConfig from './experiments/esd-protection.json'
 import uartConfig from './experiments/uart-signal.json'
 import photoConfig from './experiments/photoresistor.json'
 import lcBandpassConfig from './experiments/lc-bandpass.json'
+import mosfetConfig from './experiments/mosfet-switch.json'
+import relayConfig from './experiments/relay-driver.json'
+import r2rDacConfig from './experiments/r2r-dac.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -868,7 +940,10 @@ const allExperiments = [
   { id: 'esd-protection', icon: '⚡', shortTitle: 'ESD保护', desc: 'TVS二极管钳位', config: esdConfig, difficulty: 'beginner' },
   { id: 'uart-signal', icon: '🔗', shortTitle: 'UART串口', desc: '异步通信时序', config: uartConfig, difficulty: 'intermediate' },
   { id: 'photoresistor', icon: '💡', shortTitle: '光敏电阻测光', desc: '光照→阻值→ADC', config: photoConfig, difficulty: 'beginner' },
-  { id: 'lc-bandpass', icon: '〰️', shortTitle: 'LC带通滤波', desc: 'f₀=1/(2π√LC)', config: lcBandpassConfig, difficulty: 'advanced' }
+  { id: 'lc-bandpass', icon: '〰️', shortTitle: 'LC带通滤波', desc: 'f₀=1/(2π√LC)', config: lcBandpassConfig, difficulty: 'advanced' },
+  { id: 'mosfet-switch', icon: '🔌', shortTitle: 'MOSFET开关', desc: 'Vgs阈值/Rds(on)/功耗', config: mosfetConfig, difficulty: 'intermediate' },
+  { id: 'relay-driver', icon: '⚡', shortTitle: '继电器驱动', desc: '续流二极管保护', config: relayConfig, difficulty: 'intermediate' },
+  { id: 'r2r-dac', icon: '📊', shortTitle: 'R-2R DAC', desc: '数字转模拟电压', config: r2rDacConfig, difficulty: 'advanced' }
 ]
 
 const categories = [
