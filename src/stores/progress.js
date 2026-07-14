@@ -114,6 +114,10 @@ export const useProgressStore = defineStore('progress', {
       this.totalScore = 0
       this.errorCount = 0
       this.save()
+    },
+
+    startExperiment(experimentId) {
+      // 可选：记录开始时间等，目前仅用于扩展接口
     }
   }
 })

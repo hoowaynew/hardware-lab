@@ -11,13 +11,45 @@
           <button class="icon-btn" @click="theme.toggle()" :title="theme.mode === 'dark' ? '切换亮色' : '切换暗色'">
             {{ theme.mode === 'dark' ? '☀️' : '🌙' }}
           </button>
+          <button class="icon-btn" @click="showSettings = !showSettings" title="设置">
+            ⚙️
+          </button>
         </div>
       </div>
       <p class="app-subtitle">交互式硬件原理实验平台 · 12个实验 · 11大分类</p>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          placeholder="搜索实验名称、分类、关键词…"
+        />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">✕</button>
+      </div>
+
+      <!-- 设置面板 -->
+      <Transition name="settings-slide">
+        <div v-if="showSettings" class="settings-panel">
+          <div class="settings-item">
+            <span class="settings-label">已完成实验</span>
+            <span class="settings-value">{{ progress.completedCount }}/{{ allExperiments.length }}</span>
+          </div>
+          <div class="settings-item">
+            <span class="settings-label">总错误次数</span>
+            <span class="settings-value">{{ progress.errorCount }}</span>
+          </div>
+          <button class="reset-btn" @click="confirmReset">
+            🗑️ 重置所有进度
+          </button>
+        </div>
+      </Transition>
     </header>
 
-    <!-- 首页：进度面板 + 11分类卡片网格 -->
-    <div v-if="!store.currentExperiment && !isEmbed" class="home-view">
+    <!-- 首页：进度面板 + 搜索结果/分类卡片网格 -->
+    <div v-if="!store.currentExperiment && !isEmbed && !selectedCategory" class="home-view">
       <!-- 进度统计面板 -->
       <div class="progress-panel">
         <div class="progress-stats">
@@ -48,8 +80,30 @@
         </div>
       </div>
 
+      <!-- 搜索结果列表 -->
+      <div v-if="searchQuery" class="search-results">
+        <div v-if="filteredExperiments.length === 0" class="search-empty">
+          没有找到匹配的实验 😅
+        </div>
+        <div v-else class="exp-cards">
+          <div
+            v-for="exp in filteredExperiments"
+            :key="exp.id"
+            class="exp-card"
+            @click="loadExperiment(exp.id)"
+          >
+            <span class="exp-card-icon">{{ exp.icon }}</span>
+            <div class="exp-card-info">
+              <span class="exp-card-title">{{ exp.shortTitle }}</span>
+              <span class="exp-card-desc">{{ exp.desc }}</span>
+            </div>
+            <span v-if="progress.completed[exp.id]" class="exp-card-done">✓</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 11分类卡片网格 -->
-      <div class="category-grid">
+      <div v-else class="category-grid">
         <div
           v-for="cat in categories"
           :key="cat.id"
@@ -95,8 +149,12 @@
         <div class="experiment-meta">
           <span class="meta-tag">{{ categoryLabel }}</span>
           <span class="meta-tag">{{ difficultyLabel }}</span>
+          <button class="share-btn" @click="copyShareLink">🔗 分享</button>
         </div>
       </div>
+
+      <!-- 知识点面板 -->
+      <KnowledgePanel :data="currentKnowledge" />
 
       <!-- LED限流电阻实验布局 -->
       <div v-if="currentExpId === 'led-resistor'" class="experiment-content">
@@ -407,6 +465,8 @@ import NTCThermistorView from './components/NTCThermistorView.vue'
 import PCBTraceView from './components/PCBTraceView.vue'
 import WifiSignalView from './components/WifiSignalView.vue'
 import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
+import KnowledgePanel from './components/KnowledgePanel.vue'
+import { knowledgeData } from './data/knowledge.js'
 
 import ledConfig from './experiments/led-resistor.json'
 import gpioConfig from './experiments/gpio-modes.json'
@@ -461,13 +521,24 @@ const showErrorPopup = ref(false)
 const showSuccessToast = ref(false)
 const successMessage = ref('')
 const isEmbed = ref(new URLSearchParams(window.location.search).has('embed'))
+const searchQuery = ref('')
+const showSettings = ref(false)
 
 // 加载进度
 onMounted(() => {
   progress.load()
-  // embed模式下自动加载第一个实验
+  // embed模式下自动加载指定实验或第一个实验
   if (isEmbed.value) {
-    loadExperiment('led-resistor')
+    const params = new URLSearchParams(window.location.search)
+    const expParam = params.get('exp')
+    loadExperiment(expParam || 'led-resistor')
+  } else {
+    // 深链接：?exp=xxx 直接打开实验
+    const params = new URLSearchParams(window.location.search)
+    const expParam = params.get('exp')
+    if (expParam && allExperiments.find(e => e.id === expParam)) {
+      loadExperiment(expParam)
+    }
   }
 })
 
@@ -484,11 +555,66 @@ function goBackToCategories() {
 function exitExperiment() {
   store.currentExperiment = null
   currentExpId.value = null
+  // 清除URL中的exp参数
+  const url = new URL(window.location.href)
+  url.searchParams.delete('exp')
+  window.history.replaceState({}, '', url)
 }
 
 function getAchievementName(achId) {
   const ach = progress.achievementList.find(a => a.id === achId)
   return ach ? ach.name : achId
+}
+
+// 搜索过滤
+const filteredExperiments = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return allExperiments
+  return allExperiments.filter(exp => {
+    const catName = categories.find(c => c.id === exp.config.category)?.name || ''
+    return exp.shortTitle.toLowerCase().includes(q) ||
+           exp.desc.toLowerCase().includes(q) ||
+           catName.toLowerCase().includes(q) ||
+           exp.id.toLowerCase().includes(q)
+  })
+})
+
+// 当前实验的知识点
+const currentKnowledge = computed(() => {
+  return knowledgeData[currentExpId.value] || null
+})
+
+// 分享链接
+function copyShareLink() {
+  const url = `${window.location.origin}/?exp=${currentExpId.value}`
+  navigator.clipboard?.writeText(url).then(() => {
+    successMessage.value = '分享链接已复制到剪贴板 🔗'
+    showSuccessToast.value = true
+    setTimeout(() => { showSuccessToast.value = false }, 2500)
+  }).catch(() => {
+    // fallback
+    const textarea = document.createElement('textarea')
+    textarea.value = url
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    successMessage.value = '分享链接已复制 🔗'
+    showSuccessToast.value = true
+    setTimeout(() => { showSuccessToast.value = false }, 2500)
+  })
+}
+
+// 进度重置
+function confirmReset() {
+  if (confirm('确定要重置所有进度和成就吗？此操作不可撤销。')) {
+    progress.reset()
+    showSettings.value = false
+    successMessage.value = '进度已重置 ✅'
+    showSuccessToast.value = true
+    sfx.click()
+    setTimeout(() => { showSuccessToast.value = false }, 2500)
+  }
 }
 
 function categoryProgress(catId) {
@@ -504,6 +630,14 @@ function loadExperiment(id) {
   currentExpId.value = id
   store.loadExperiment(exp.config)
   showErrorPopup.value = false
+  // 更新URL深链接
+  if (!isEmbed.value) {
+    const url = new URL(window.location.href)
+    url.searchParams.set('exp', id)
+    window.history.replaceState({}, '', url)
+  }
+  // 标记开始实验
+  progress.startExperiment(id)
 }
 
 function onUserUpdate(key, value) {
@@ -829,6 +963,155 @@ body {
 .app-subtitle {
   font-size: 13px;
   color: var(--text-dim);
+}
+
+/* 搜索栏 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  transition: border-color 0.2s;
+}
+.search-bar:focus-within {
+  border-color: var(--primary);
+}
+.search-icon {
+  font-size: 14px;
+  opacity: 0.6;
+}
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+}
+.search-input::placeholder {
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+.search-clear {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+}
+
+/* 设置面板 */
+.settings-panel {
+  margin-top: 10px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+.settings-label { color: var(--text-dim); }
+.settings-value { color: var(--text); font-weight: 600; }
+.reset-btn {
+  margin-top: 4px;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.3);
+  color: var(--danger);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.reset-btn:hover {
+  background: rgba(192,57,43,0.2);
+}
+.settings-slide-enter-active, .settings-slide-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.settings-slide-enter-from, .settings-slide-leave-to {
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+}
+
+/* 搜索结果 */
+.search-results { margin-top: 4px; }
+.search-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 32px;
+  font-size: 14px;
+}
+.exp-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.exp-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.exp-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.exp-card-icon { font-size: 24px; }
+.exp-card-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.exp-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.exp-card-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.exp-card-done {
+  color: var(--success);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* 分享按钮 */
+.share-btn {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+.share-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* 首页视图容器 */

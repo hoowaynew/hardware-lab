@@ -1,0 +1,246 @@
+/**
+ * 每个实验的知识点数据
+ * 在实验页面展示可折叠的核心公式/概念/提示
+ */
+
+export const knowledgeData = {
+  'led-resistor': {
+    title: 'LED限流电阻原理',
+    formulas: [
+      { label: '限流电阻', expr: 'R = (Vcc - Vf) / If' },
+      { label: '功率', expr: 'P = I² × R' }
+    ],
+    concepts: [
+      'LED是二极管，不是线性元件，不能用欧姆定律直接计算',
+      'LED有正向导通压降(Vf)：红光≈2.0V，蓝光/白光≈3.0V',
+      '限流电阻承担多余电压，将电流控制在安全范围内（通常≤20mA）',
+      '没有限流电阻直接接电源 = 短路，LED瞬间烧毁'
+    ],
+    tips: [
+      '常见5mm LED额定电流20mA，安全工作电流5-15mA',
+      'Vf因颜色不同而不同：红<黄<绿<蓝<白',
+      '多个LED串联时：R = (Vcc - n×Vf) / If'
+    ]
+  },
+
+  'gpio-modes': {
+    title: 'STM32 GPIO八种模式',
+    formulas: [
+      { label: '上拉电阻典型值', expr: 'R_pullup ≈ 40kΩ (内部)' }
+    ],
+    concepts: [
+      '输入模式4种：浮空、上拉、下拉、模拟',
+      '输出模式4种：推挽、开漏、复用推挽、复用开漏',
+      '浮空输入电平不确定，受电磁干扰影响',
+      '开漏输出只能拉低，需要外部上拉电阻才能输出高电平',
+      '推挽输出内部有上下两个MOS管，不要直接接地'
+    ],
+    tips: [
+      '按键检测用上拉或下拉输入，不要用浮空',
+      'I2C总线SDA/SCL必须用开漏+外部上拉',
+      '推挽输出驱动大电流负载需要加驱动电路（三极管/MOS管）'
+    ]
+  },
+
+  'pwm-tuner': {
+    title: 'PWM脉冲宽度调制',
+    formulas: [
+      { label: '平均电压', expr: 'V_avg = Vcc × (Duty / 100%)' },
+      { label: '舵机角度', expr: 'θ = (t_pulse - 0.5ms) / 2ms × 180°' }
+    ],
+    concepts: [
+      'PWM通过改变占空比来控制平均功率/电压',
+      '占空比 = 高电平时间 / 周期 × 100%',
+      '频率决定PWM的"粒度"，频率越高越平滑',
+      '舵机需要50Hz(20ms周期)，脉宽0.5~2.5ms对应0~180°'
+    ],
+    tips: [
+      'LED调光：频率>200Hz人眼无闪烁感',
+      '舵机控制：100%占空比 = 持续高电平，舵机无法识别',
+      '电机调速：频率通常8~20kHz，避免可听噪声'
+    ]
+  },
+
+  'voltage-divider': {
+    title: '分压器原理',
+    formulas: [
+      { label: '输出电压', expr: 'Vout = Vin × R2 / (R1 + R2)' },
+      { label: '分压电流', expr: 'I = Vin / (R1 + R2)' },
+      { label: '功耗', expr: 'P = Vin² / (R1 + R2)' }
+    ],
+    concepts: [
+      '两个电阻串联，中间点电压按比例分配',
+      '分压器输出阻抗高，不能直接驱动负载（负载会改变分压比）',
+      'STM32 ADC输入阻抗建议源阻抗<50kΩ',
+      'ADC输入电压不能超过VREF（通常3.3V）'
+    ],
+    tips: [
+      '总阻值太小 → 功耗大；太大 → ADC采样不准',
+      '推荐总阻值范围：10kΩ~100kΩ',
+      '测量电池电压时，先分压再接ADC，防止过压'
+    ]
+  },
+
+  'capacitor-charge': {
+    title: 'RC充放电时间常数',
+    formulas: [
+      { label: '时间常数', expr: 'τ = R × C' },
+      { label: '充电电压', expr: 'V(t) = Vmax × (1 - e^(-t/τ))' },
+      { label: '放电电压', expr: 'V(t) = V0 × e^(-t/τ)' }
+    ],
+    concepts: [
+      'τ = RC 决定充放电速度',
+      '1τ充到63%，3τ充到95%，5τ认为充满（99.3%）',
+      '电容电压不能突变，电流可以突变',
+      '充电和放电时间常数相同（同一个RC）'
+    ],
+    tips: [
+      'R×C 单位：Ω×F = 秒',
+      '去耦电容选型：根据负载瞬态电流和容忍压降计算',
+      'RC电路也用于上电复位延时，典型τ=100ms'
+    ]
+  },
+
+  'transistor-switch': {
+    title: '三极管开关电路',
+    formulas: [
+      { label: '基极电流', expr: 'Ib = (Vcc - Vbe) / Rb, Vbe≈0.7V' },
+      { label: '饱和电流', expr: 'Ic_sat = (Vcc - Vce_sat) / Rc, Vce_sat≈0.2V' },
+      { label: '饱和条件', expr: 'Ib ≥ Ic_sat / β' }
+    ],
+    concepts: [
+      'NPN三极管三个工作区：截止、放大、饱和',
+      '开关应用：工作在截止区(OFF)和饱和区(ON)',
+      '饱和条件：基极电流足够大，Ib ≥ Ic_sat/β',
+      '基极电流不足 → 进入放大区 → 开关不彻底 → 发热'
+    ],
+    tips: [
+      '设计步骤：先定Ic → 算Ic_sat → 算Ib_min → 取Ib=2~5×Ib_min → 算Rb',
+      'Vbe≈0.7V是硅管典型值，锗管≈0.3V',
+      '集电极功耗 P = Vce × Ic，饱和区Vce≈0.2V所以功耗很小'
+    ]
+  },
+
+  'rc-filter': {
+    title: 'RC低通滤波器',
+    formulas: [
+      { label: '截止频率', expr: 'fc = 1 / (2πRC)' },
+      { label: '增益', expr: 'G = 1 / √(1 + (f/fc)²)' },
+      { label: '衰减(dB)', expr: 'A = 20 × log10(G)' }
+    ],
+    concepts: [
+      '低通滤波器：低频通过，高频衰减',
+      '截止频率fc处增益=0.707（-3dB）',
+      'fc以上每10倍频衰减20dB（-20dB/decade）',
+      '一阶RC滤波器衰减斜率固定-20dB/dec，不够陡'
+    ],
+    tips: [
+      'R×C中C的单位是法拉(F)，μF需要÷1e6',
+      '抗混叠滤波：ADC采样前用LPF滤除高于Nyquist频率的成分',
+      '需要更陡的滤波 → 用二阶/有源滤波器（Sallen-Key等）'
+    ]
+  },
+
+  'i2c-signal': {
+    title: 'I2C通信协议',
+    formulas: [
+      { label: '地址帧', expr: '[7-bit addr] + [R/W] + [ACK]' },
+      { label: '数据帧', expr: '[8-bit data] + [ACK]' }
+    ],
+    concepts: [
+      'I2C是两线制：SDA(数据) + SCLK(时钟)',
+      'START: SCL高时SDA由高变低',
+      'STOP: SCL高时SDA由低变高',
+      '数据在SCL低电平时改变，SCL高电平时采样',
+      'ACK: 接收方拉低SDA表示应答；NACK: 不拉低表示无应答'
+    ],
+    tips: [
+      '7位地址 + 1位R/W = 8位地址帧',
+      '总线空闲时SDA和SCL都是高电平（上拉电阻维持）',
+      '标准模式100kHz / 快速模式400kHz / 快速+模式1MHz',
+      '每个从机地址唯一，地址冲突会导致通信混乱'
+    ]
+  },
+
+  'ntc-thermistor': {
+    title: 'NTC热敏电阻测温',
+    formulas: [
+      { label: 'B参数方程', expr: 'R(T) = R25 × exp(B × (1/T - 1/T25))' },
+      { label: '分压输出', expr: 'Vout = Vcc × Rntc / (Rpullup + Rntc)' },
+      { label: 'ADC值', expr: 'ADC = Vout/Vcc × (2^bits - 1)' }
+    ],
+    concepts: [
+      'NTC: 温度升高 → 阻值降低（负温度系数）',
+      'B参数方程描述R-T关系，B值通常3950',
+      '分压电路将阻值变化转换为电压变化',
+      'ADC将模拟电压数字化，位数决定精度'
+    ],
+    tips: [
+      '上拉电阻 ≈ R25时，25°C附近灵敏度最高',
+      '12位ADC精度0.024%，但受NTC非线性影响实际精度低很多',
+      '低温区NTC阻值大 → ADC接近满量程（饱和）',
+      '高温区NTC阻值小 → ADC接近0（精度差）'
+    ]
+  },
+
+  'pcb-trace-impedance': {
+    title: 'PCB走线阻抗控制',
+    formulas: [
+      { label: '微带线阻抗', expr: 'Z0 = 87/√(εr+1.41) × ln(5.98H/(0.8W+T))' },
+      { label: '有效介电常数', expr: 'εeff = (εr+1)/2 + (εr-1)/2 × f(W/H)' }
+    ],
+    concepts: [
+      '高频信号走线需要控制阻抗，通常50Ω',
+      '阻抗不匹配 → 信号反射 → 信号完整性问题',
+      '微带线(microstrip): 顶层走线，一面空气一面介质',
+      '影响阻抗的因素：线宽W、介质厚度H、介电常数εr、铜厚T'
+    ],
+    tips: [
+      'FR4的εr ≈ 4.2~4.6，频率越高有效εr越低',
+      '50Ω阻抗的常用参数组合：W=0.2mm H=0.1mm (JLC04161H)',
+      '高速信号（USB/DDR/RF）必须做阻抗控制',
+      '差分对走线需要控制差分阻抗（通常90Ω或100Ω）'
+    ]
+  },
+
+  'wifi-signal-attenuation': {
+    title: 'WiFi链路预算',
+    formulas: [
+      { label: '自由空间损耗', expr: 'FSPL(dB) = 20log10(d) + 20log10(f_MHz) + 32.44' },
+      { label: '接收功率', expr: 'RSSI = TxPower + Gtx + Grx - FSPL - Loss_walls' },
+      { label: '链路余量', expr: 'Margin = RSSI - RxSensitivity' }
+    ],
+    concepts: [
+      '链路预算：发射功率 → 路径损耗 → 接收功率 → 余量',
+      'FSPL随距离和频率增加而增大',
+      '墙壁衰减：2.4GHz约8dB/墙，5GHz约12dB/墙',
+      '链路余量<10dB → 不稳定，<0dB → 断连'
+    ],
+    tips: [
+      '5GHz穿透能力差但带宽高，2.4GHz穿墙好但干扰多',
+      'RSSI > -50dBm: 优秀, -65: 良好, -75: 较差, < -82: 断连',
+      '天线增益dBi是定向增益，全向天线增益越高覆盖越窄'
+    ]
+  },
+
+  'logic-analyzer-debug': {
+    title: 'SPI协议与逻辑分析仪',
+    formulas: [
+      { label: 'SPI模式', expr: 'Mode = CPOL × 2 + CPHA' },
+      { label: '时钟周期', expr: 'T = 1 / f_clk' }
+    ],
+    concepts: [
+      'SPI四线：CS(片选) + SCLK(时钟) + MOSI(主出从入) + MISO(主入从出)',
+      'CPOL: 时钟空闲电平（0=低, 1=高）',
+      'CPHA: 采样边沿（0=第一个边沿, 1=第二个边沿）',
+      '4种模式：Mode0(CPOL=0,CPHA=0)最常用',
+      '逻辑分析仪采样所有信号线，按协议解码'
+    ],
+    tips: [
+      '主从模式必须一致，否则数据错位/反转',
+      'CS低电平有效，选中从机后开始通信',
+      '逻辑分析仪采样率 ≥ 4倍时钟频率才能准确解码',
+      '调试SPI问题：先用逻辑分析仪抓波形，确认CPOL/CPHA'
+    ]
+  }
+}
