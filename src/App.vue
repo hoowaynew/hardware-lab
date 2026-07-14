@@ -80,6 +80,38 @@
         </div>
       </div>
 
+      <!-- 最近浏览 -->
+      <div v-if="!searchQuery && recentExperiments.length > 0" class="quick-row">
+        <div class="quick-label">🕐 最近浏览</div>
+        <div class="quick-chips">
+          <div
+            v-for="exp in recentExperiments"
+            :key="'r-' + exp.id"
+            class="quick-chip"
+            @click="loadExperiment(exp.id)"
+          >
+            <span>{{ exp.icon }}</span>
+            <span>{{ exp.shortTitle }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 收藏列表 -->
+      <div v-if="!searchQuery && favoriteExperiments.length > 0" class="quick-row">
+        <div class="quick-label">⭐ 收藏</div>
+        <div class="quick-chips">
+          <div
+            v-for="exp in favoriteExperiments"
+            :key="'f-' + exp.id"
+            class="quick-chip fav-chip"
+            @click="loadExperiment(exp.id)"
+          >
+            <span>{{ exp.icon }}</span>
+            <span>{{ exp.shortTitle }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 搜索结果列表 -->
       <div v-if="searchQuery" class="search-results">
         <div v-if="filteredExperiments.length === 0" class="search-empty">
@@ -150,11 +182,20 @@
           <span class="meta-tag">{{ categoryLabel }}</span>
           <span class="meta-tag">{{ difficultyLabel }}</span>
           <button class="share-btn" @click="copyShareLink">🔗 分享</button>
+          <button
+            v-if="!isEmbed"
+            class="share-btn fav-toggle"
+            :class="{ 'is-fav': favorites.isFavorite(currentExpId) }"
+            @click="toggleFav"
+          >{{ favorites.isFavorite(currentExpId) ? '★ 已收藏' : '☆ 收藏' }}</button>
         </div>
       </div>
 
       <!-- 知识点面板 -->
       <KnowledgePanel :data="currentKnowledge" />
+
+      <!-- 渐进提示 -->
+      <HintButton :hints="currentHints" />
 
       <!-- LED限流电阻实验布局 -->
       <div v-if="currentExpId === 'led-resistor'" class="experiment-content">
@@ -466,7 +507,10 @@ import PCBTraceView from './components/PCBTraceView.vue'
 import WifiSignalView from './components/WifiSignalView.vue'
 import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
+import HintButton from './components/HintButton.vue'
 import { knowledgeData } from './data/knowledge.js'
+import { hintsData } from './data/hints.js'
+import { useFavoritesStore } from './stores/favorites.js'
 
 import ledConfig from './experiments/led-resistor.json'
 import gpioConfig from './experiments/gpio-modes.json'
@@ -484,6 +528,7 @@ import laConfig from './experiments/logic-analyzer-debug.json'
 const store = useExperimentStore()
 const progress = useProgressStore()
 const theme = useThemeStore()
+const favorites = useFavoritesStore()
 const soundOn = ref(isSoundEnabled())
 
 const allExperiments = [
@@ -527,6 +572,7 @@ const showSettings = ref(false)
 // 加载进度
 onMounted(() => {
   progress.load()
+  favorites.load()
   // embed模式下自动加载指定实验或第一个实验
   if (isEmbed.value) {
     const params = new URLSearchParams(window.location.search)
@@ -540,7 +586,46 @@ onMounted(() => {
       loadExperiment(expParam)
     }
   }
+
+  // 键盘快捷键
+  window.addEventListener('keydown', handleKeydown)
 })
+
+function handleKeydown(e) {
+  if (e.key === 'Escape' && store.currentExperiment) {
+    exitExperiment()
+  } else if (e.key === 'ArrowRight' && store.currentExperiment) {
+    navigateExperiment(1)
+  } else if (e.key === 'ArrowLeft' && store.currentExperiment) {
+    navigateExperiment(-1)
+  }
+}
+
+function navigateExperiment(dir) {
+  const idx = allExperiments.findIndex(e => e.id === currentExpId.value)
+  if (idx < 0) return
+  const next = idx + dir
+  if (next >= 0 && next < allExperiments.length) {
+    loadExperiment(allExperiments[next].id)
+  }
+}
+
+// 最近浏览列表
+const recentExperiments = computed(() => {
+  return favorites.recent
+    .map(id => allExperiments.find(e => e.id === id))
+    .filter(Boolean)
+})
+
+// 收藏列表
+const favoriteExperiments = computed(() => {
+  return favorites.favorites
+    .map(id => allExperiments.find(e => e.id === id))
+    .filter(Boolean)
+})
+
+// 当前实验的提示数据
+const currentHints = computed(() => hintsData[currentExpId.value] || [])
 
 function selectCategory(cat) {
   if (!cat.available) return
@@ -638,6 +723,14 @@ function loadExperiment(id) {
   }
   // 标记开始实验
   progress.startExperiment(id)
+  // 记录最近浏览
+  favorites.recordVisit(id)
+}
+
+// 收藏切换
+function toggleFav() {
+  favorites.toggleFavorite(currentExpId.value)
+  sfx.click()
 }
 
 function onUserUpdate(key, value) {
@@ -1112,6 +1205,53 @@ body {
 .share-btn:hover {
   border-color: var(--primary);
   color: var(--primary);
+}
+.fav-toggle.is-fav {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+/* 最近浏览 + 收藏 */
+.quick-row {
+  margin-top: 4px;
+}
+.quick-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.quick-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.quick-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.quick-chip:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.fav-chip {
+  border-color: rgba(230,126,34,0.3);
+}
+.fav-chip:hover {
+  border-color: var(--warning);
 }
 
 /* 首页视图容器 */
