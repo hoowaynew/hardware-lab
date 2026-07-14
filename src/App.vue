@@ -3,21 +3,55 @@
     <!-- 顶部导航 -->
     <header v-if="!isEmbed" class="app-header">
       <h1>🔬 硬件实验室</h1>
-      <p class="app-subtitle">交互式硬件原理实验平台</p>
+      <p class="app-subtitle">交互式硬件原理实验平台 · 12个实验 · 11大分类</p>
     </header>
 
-    <!-- 首页：11分类卡片网格 -->
-    <div v-if="!store.currentExperiment && !isEmbed" class="category-grid">
-      <div
-        v-for="cat in categories"
-        :key="cat.id"
-        class="category-card"
-        :class="{ 'cat-available': cat.available, 'cat-soon': !cat.available }"
-        @click="cat.available && selectCategory(cat)"
-      >
-        <span class="cat-icon">{{ cat.icon }}</span>
-        <span class="cat-name">{{ cat.name }}</span>
-        <span class="cat-count">{{ cat.available ? cat.experiments.length + '个实验' : '即将上线' }}</span>
+    <!-- 首页：进度面板 + 11分类卡片网格 -->
+    <div v-if="!store.currentExperiment && !isEmbed" class="home-view">
+      <!-- 进度统计面板 -->
+      <div class="progress-panel">
+        <div class="progress-stats">
+          <div class="progress-stat">
+            <span class="ps-value">{{ progress.completedCount }}/{{ allExperiments.length }}</span>
+            <span class="ps-label">已完成实验</span>
+          </div>
+          <div class="progress-stat">
+            <span class="ps-value">{{ progress.totalStars }}/{{ progress.maxStars }}</span>
+            <span class="ps-label">总星数</span>
+          </div>
+          <div class="progress-stat">
+            <span class="ps-value">{{ progress.achievements.length }}</span>
+            <span class="ps-label">成就解锁</span>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" :style="{ width: progress.progressPercent + '%' }"></div>
+          <span class="progress-bar-text">{{ progress.progressPercent }}%</span>
+        </div>
+        <!-- 成就展示 -->
+        <div class="achievement-row" v-if="progress.achievements.length > 0">
+          <span
+            v-for="achId in progress.achievements"
+            :key="achId"
+            class="achievement-badge"
+          >{{ getAchievementName(achId) }}</span>
+        </div>
+      </div>
+
+      <!-- 11分类卡片网格 -->
+      <div class="category-grid">
+        <div
+          v-for="cat in categories"
+          :key="cat.id"
+          class="category-card"
+          :class="{ 'cat-available': cat.available, 'cat-soon': !cat.available }"
+          @click="cat.available && selectCategory(cat)"
+        >
+          <span class="cat-icon">{{ cat.icon }}</span>
+          <span class="cat-name">{{ cat.name }}</span>
+          <span class="cat-count">{{ cat.available ? cat.experiments.length + '个实验' : '即将上线' }}</span>
+          <span v-if="categoryProgress(cat.id) > 0" class="cat-progress">{{ categoryProgress(cat.id) }}/{{ cat.experiments.length }} ✓</span>
+        </div>
       </div>
     </div>
 
@@ -437,6 +471,17 @@ function exitExperiment() {
   currentExpId.value = null
 }
 
+function getAchievementName(achId) {
+  const ach = progress.achievementList.find(a => a.id === achId)
+  return ach ? ach.name : achId
+}
+
+function categoryProgress(catId) {
+  const cat = categories.find(c => c.id === catId)
+  if (!cat) return 0
+  return cat.experiments.filter(e => progress.completed[e.id]).length
+}
+
 function loadExperiment(id) {
   const exp = allExperiments.find(e => e.id === id)
   if (!exp) return
@@ -499,6 +544,7 @@ function checkSuccess() {
 watch(() => store.errors, (errors) => {
   if (errors.length > 0) {
     showErrorPopup.value = true
+    progress.recordError()
     // 记录进度（有错误也算完成，但只有1星）
     if (!progress.completed[currentExpId.value]) {
       progress.complete(currentExpId.value, false)
@@ -683,12 +729,86 @@ body {
   color: var(--text-dim);
 }
 
+/* 首页视图容器 */
+.home-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* 进度面板 */
+.progress-panel {
+  background: var(--surface-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.progress-stats {
+  display: flex;
+  justify-content: space-around;
+}
+.progress-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.ps-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: monospace;
+}
+.ps-label {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.progress-bar-wrap {
+  position: relative;
+  height: 22px;
+  background: var(--bg);
+  border-radius: 11px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--success));
+  transition: width 0.4s;
+  border-radius: 11px;
+}
+.progress-bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+.achievement-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.achievement-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: rgba(243, 156, 18, 0.15);
+  color: var(--warning);
+  white-space: nowrap;
+}
+
 /* 分类网格 */
 .category-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 .category-card {
   display: flex;
@@ -699,6 +819,12 @@ body {
   border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
+}
+.cat-progress {
+  font-size: 10px;
+  color: var(--success);
+  margin-top: 2px;
 }
 .category-card.cat-available {
   background: var(--surface);
