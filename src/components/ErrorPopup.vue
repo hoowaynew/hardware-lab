@@ -82,12 +82,13 @@ const icon = computed(() => {
   padding: 20px;
 }
 .error-popup {
-  background: #1e1e30;
+  background: var(--popup-bg);
   border-radius: 16px;
   max-width: 420px;
   width: 100%;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transition: background 0.3s;
 }
 .popup-header {
   display: flex;
@@ -97,8 +98,8 @@ const icon = computed(() => {
   font-size: 16px;
   font-weight: bold;
 }
-.popup-header.warning { background: linear-gradient(135deg, #f39c12, #e67e22); color: #fff; }
-.popup-header.severe { background: linear-gradient(135deg, #e74c3c, #c0392b); color: #fff; }
+.popup-header.warning { background: linear-gradient(135deg, var(--warning), #e67e22); color: #fff; }
+.popup-header.severe { background: linear-gradient(135deg, var(--danger), #c0392b); color: #fff; }
 .popup-icon { font-size: 22px; }
 .popup-title { flex: 1; }
 .popup-close {
@@ -107,41 +108,41 @@ const icon = computed(() => {
 }
 .popup-body { padding: 16px; }
 .popup-explanation {
-  color: #ddd; font-size: 14px; line-height: 1.6;
+  color: var(--popup-text); font-size: 14px; line-height: 1.6;
   white-space: pre-line; margin-bottom: 12px;
 }
 .tutorial-section {
-  background: rgba(255,255,255,0.05);
+  background: rgba(128,128,128,0.08);
   border-radius: 8px;
   padding: 12px;
-  border-left: 3px solid #3498db;
+  border-left: 3px solid var(--primary);
 }
 .tutorial-header {
-  font-size: 13px; font-weight: bold; color: #3498db; margin-bottom: 8px;
+  font-size: 13px; font-weight: bold; color: var(--primary); margin-bottom: 8px;
 }
 .tutorial-concept {
-  font-size: 13px; color: #aaa; margin-bottom: 6px;
+  font-size: 13px; color: var(--text-dim); margin-bottom: 6px;
 }
-.concept-label { color: #666; }
-.concept-value { color: #fff; }
+.concept-label { color: var(--text-dim); }
+.concept-value { color: var(--text); }
 .tutorial-formula {
-  background: rgba(0,0,0,0.3); border-radius: 4px; padding: 6px 8px; margin-bottom: 8px;
+  background: var(--popup-code-bg); border-radius: 4px; padding: 6px 8px; margin-bottom: 8px;
 }
 .tutorial-formula code {
-  color: #2ecc71; font-size: 13px; font-family: 'SF Mono', monospace;
+  color: var(--success); font-size: 13px; font-family: 'SF Mono', monospace;
 }
 .tutorial-tips {
   list-style: none; padding: 0; margin: 0 0 8px 0;
 }
 .tutorial-tips li {
-  font-size: 12px; color: #999; padding: 2px 0;
+  font-size: 12px; color: var(--text-dim); padding: 2px 0;
   padding-left: 16px; position: relative;
 }
 .tutorial-tips li::before {
-  content: '▸'; position: absolute; left: 0; color: #3498db;
+  content: '▸'; position: absolute; left: 0; color: var(--primary);
 }
 .tutorial-link {
-  display: block; text-align: center; color: #3498db;
+  display: block; text-align: center; color: var(--primary);
   text-decoration: none; font-size: 13px; padding: 6px;
   border: 1px solid rgba(52,152,219,0.3); border-radius: 6px;
 }
@@ -149,7 +150,7 @@ const icon = computed(() => {
   padding: 0 16px 16px; display: flex; justify-content: center;
 }
 .btn-retry {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff; border: none; border-radius: 8px;
   padding: 10px 24px; font-size: 14px; cursor: pointer;
   transition: transform 0.2s;

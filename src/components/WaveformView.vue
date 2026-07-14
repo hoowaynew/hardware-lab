@@ -148,15 +148,16 @@ const gpioColor = computed(() => {
 
 <style scoped>
 .waveform-view {
-  background: #0d0d1a;
+  background: var(--wave-bg);
   border-radius: 8px;
   padding: 8px;
+  transition: background 0.3s;
 }
 .wave-svg {
   display: block;
 }
 .waveform-info {
-  color: #888;
+  color: var(--text-dim);
   font-size: 11px;
   text-align: center;
   margin-top: 4px;

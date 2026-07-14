@@ -152,19 +152,19 @@ function formatToggleValue(val, interaction) {
   gap: 16px;
 }
 .interaction-item {
-  background: rgba(255,255,255,0.04);
+  background: rgba(128,128,128,0.06);
   border-radius: 10px;
   padding: 12px;
 }
 .interaction-label {
   display: block;
   font-size: 13px;
-  color: #888;
+  color: var(--text-dim);
   margin-bottom: 8px;
 }
 .slider-value {
   float: right;
-  color: #3498db;
+  color: var(--primary);
   font-weight: bold;
 }
 .value-buttons, .select-buttons, .toggle-buttons {
@@ -173,9 +173,9 @@ function formatToggleValue(val, interaction) {
   gap: 6px;
 }
 .value-btn, .select-btn, .toggle-btn {
-  background: #2a2a3e;
-  border: 1px solid #333;
-  color: #aaa;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  color: var(--btn-text);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 13px;
@@ -183,9 +183,9 @@ function formatToggleValue(val, interaction) {
   transition: all 0.2s;
 }
 .value-btn.active, .select-btn.active, .toggle-btn.active {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
-  border-color: #3498db;
+  border-color: var(--primary);
 }
 .mode-grid {
   display: grid;
@@ -197,9 +197,9 @@ function formatToggleValue(val, interaction) {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  background: #2a2a3e;
-  border: 1px solid #333;
-  color: #aaa;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  color: var(--btn-text);
   border-radius: 8px;
   padding: 8px 4px;
   font-size: 11px;
@@ -207,9 +207,9 @@ function formatToggleValue(val, interaction) {
   transition: all 0.2s;
 }
 .mode-btn.active {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: #fff;
-  border-color: #3498db;
+  border-color: var(--primary);
 }
 .mode-icon { font-size: 18px; }
 .slider-input {
@@ -217,7 +217,7 @@ function formatToggleValue(val, interaction) {
   -webkit-appearance: none;
   appearance: none;
   height: 6px;
-  background: #2a2a3e;
+  background: var(--btn-bg);
   border-radius: 3px;
   outline: none;
 }
@@ -227,7 +227,7 @@ function formatToggleValue(val, interaction) {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #3498db;
+  background: var(--primary);
   cursor: pointer;
 }
 </style>

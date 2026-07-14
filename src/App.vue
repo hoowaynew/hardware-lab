@@ -2,7 +2,17 @@
   <div class="app" :class="{ 'embed-mode': isEmbed }">
     <!-- 顶部导航 -->
     <header v-if="!isEmbed" class="app-header">
-      <h1>🔬 硬件实验室</h1>
+      <div class="header-row">
+        <h1>🔬 硬件实验室</h1>
+        <div class="header-controls">
+          <button class="icon-btn" @click="toggleSound" :title="soundOn ? '关闭音效' : '开启音效'">
+            {{ soundOn ? '🔊' : '🔇' }}
+          </button>
+          <button class="icon-btn" @click="theme.toggle()" :title="theme.mode === 'dark' ? '切换亮色' : '切换暗色'">
+            {{ theme.mode === 'dark' ? '☀️' : '🌙' }}
+          </button>
+        </div>
+      </div>
       <p class="app-subtitle">交互式硬件原理实验平台 · 12个实验 · 11大分类</p>
     </header>
 
@@ -381,6 +391,8 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useExperimentStore } from './stores/experiment.js'
 import { useProgressStore } from './stores/progress.js'
+import { useThemeStore } from './stores/theme.js'
+import { sfx, setSoundEnabled, isSoundEnabled } from './utils/sound.js'
 import CircuitCanvas from './components/CircuitCanvas.vue'
 import InteractionPanel from './components/InteractionPanel.vue'
 import ErrorPopup from './components/ErrorPopup.vue'
@@ -411,6 +423,8 @@ import laConfig from './experiments/logic-analyzer-debug.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
+const theme = useThemeStore()
+const soundOn = ref(isSoundEnabled())
 
 const allExperiments = [
   { id: 'led-resistor', icon: '💡', shortTitle: 'LED限流电阻', desc: '计算正确的限流阻值', config: ledConfig },
@@ -459,6 +473,7 @@ onMounted(() => {
 
 function selectCategory(cat) {
   if (!cat.available) return
+  sfx.click()
   selectedCategory.value = cat
 }
 
@@ -485,6 +500,7 @@ function categoryProgress(catId) {
 function loadExperiment(id) {
   const exp = allExperiments.find(e => e.id === id)
   if (!exp) return
+  sfx.click()
   currentExpId.value = id
   store.loadExperiment(exp.config)
   showErrorPopup.value = false
@@ -492,6 +508,7 @@ function loadExperiment(id) {
 
 function onUserUpdate(key, value) {
   store.updateUserState(key, value)
+  sfx.slide()
   checkSuccess()
 }
 
@@ -505,6 +522,7 @@ function onComponentClick(comp) {
       const currentIdx = options.indexOf(store.userState[key] ?? comp.value)
       const nextIdx = (currentIdx + 1) % options.length
       store.updateUserState(key, options[nextIdx])
+      sfx.toggle()
       checkSuccess()
     }
   }
@@ -530,27 +548,47 @@ function checkSuccess() {
       progress.complete(expId, true)
       successMessage.value = '完美通关！无错误完成实验 ⭐⭐⭐'
       showSuccessToast.value = true
+      sfx.success()
       setTimeout(() => { showSuccessToast.value = false }, 2500)
     } else if (!progress.completed[expId]?.firstErrorFree) {
       progress.complete(expId, true)
       successMessage.value = '完美通关！首次无错误 ⭐⭐⭐'
       showSuccessToast.value = true
+      sfx.success()
       setTimeout(() => { showSuccessToast.value = false }, 2500)
     }
   }
 }
 
-// 监听错误，自动弹窗
+// 监听错误，自动弹窗+音效
 watch(() => store.errors, (errors) => {
   if (errors.length > 0) {
     showErrorPopup.value = true
+    const prevAchCount = progress.achievements.length
     progress.recordError()
     // 记录进度（有错误也算完成，但只有1星）
     if (!progress.completed[currentExpId.value]) {
       progress.complete(currentExpId.value, false)
     }
+    // 错误音效
+    const errType = errors[0]?.type || ''
+    if (errType.includes('SHORT')) {
+      sfx.shortCircuit()
+    } else {
+      sfx.error()
+    }
+    // 新成就解锁音效
+    if (progress.achievements.length > prevAchCount) {
+      setTimeout(() => sfx.achievement(), 500)
+    }
   }
 }, { deep: true })
+
+function toggleSound() {
+  soundOn.value = !soundOn.value
+  setSoundEnabled(soundOn.value)
+  if (soundOn.value) sfx.click()
+}
 
 const categoryLabel = computed(() => {
   const map = {
@@ -685,6 +723,7 @@ const pwmLoadType = computed(() => {
   --bg: #0f0f1e;
   --surface: #1a1a2e;
   --surface-light: #252539;
+  --surface-hover: #2a2a3e;
   --primary: #3498db;
   --primary-dark: #2980b9;
   --success: #2ecc71;
@@ -693,7 +732,42 @@ const pwmLoadType = computed(() => {
   --text: #e0e0e0;
   --text-dim: #888;
   --border: #333;
+  --canvas-bg: #1a1a2e;
+  --wave-bg: #0d0d1a;
+  --wave-grid: rgba(255,255,255,0.05);
+  --wave-axis: rgba(255,255,255,0.1);
+  --wave-label: #666;
+  --btn-bg: #2a2a3e;
+  --btn-text: #aaa;
+  --popup-bg: #1e1e30;
+  --popup-text: #ddd;
+  --popup-code-bg: rgba(0,0,0,0.3);
   --radius: 12px;
+}
+
+[data-theme="light"] {
+  --bg: #f5f5f0;
+  --surface: #ffffff;
+  --surface-light: #eaeae4;
+  --surface-hover: #e0e0d8;
+  --primary: #2980b9;
+  --primary-dark: #1a6fa0;
+  --success: #27ae60;
+  --danger: #c0392b;
+  --warning: #e67e22;
+  --text: #2c2c2c;
+  --text-dim: #777;
+  --border: #d0d0c8;
+  --canvas-bg: #f8f8f3;
+  --wave-bg: #f0f0eb;
+  --wave-grid: rgba(0,0,0,0.05);
+  --wave-axis: rgba(0,0,0,0.1);
+  --wave-label: #999;
+  --btn-bg: #e8e8e0;
+  --btn-text: #555;
+  --popup-bg: #ffffff;
+  --popup-text: #333;
+  --popup-code-bg: rgba(0,0,0,0.05);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -703,6 +777,7 @@ body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
 }
 
 .app {
@@ -718,6 +793,33 @@ body {
 .app-header {
   text-align: center;
   margin-bottom: 16px;
+}
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.header-controls {
+  display: flex;
+  gap: 4px;
+}
+.icon-btn {
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.icon-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
 }
 .app-header h1 {
   font-size: 20px;
@@ -937,7 +1039,7 @@ body {
   gap: 12px;
 }
 .pwm-load-display {
-  background: rgba(255,255,255,0.03);
+  background: rgba(128,128,128,0.05);
   border-radius: 8px;
   padding: 12px;
 }

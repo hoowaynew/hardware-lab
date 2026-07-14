@@ -108,18 +108,18 @@ const glowStyle = computed(() => ({
   flex-direction: column;
   gap: 4px;
   font-size: 13px;
-  color: #888;
+  color: var(--text-dim);
 }
 .brightness-bar {
   width: 120px;
   height: 6px;
-  background: #2a2a3e;
+  background: var(--btn-bg);
   border-radius: 3px;
   overflow: hidden;
 }
 .brightness-fill {
   height: 100%;
-  background: linear-gradient(90deg, #f39c12, #fff);
+  background: linear-gradient(90deg, var(--warning), #fff);
   transition: width 0.3s;
 }
 .servo-visual {
@@ -135,7 +135,7 @@ const glowStyle = computed(() => ({
   transition: transform 0.3s;
 }
 .load-error {
-  color: #e74c3c;
+  color: var(--danger);
 }
 .buzzer-visual {
   font-size: 48px;

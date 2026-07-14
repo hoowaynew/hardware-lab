@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#0f0f1e"/>
+  <circle cx="96" cy="96" r="50" fill="none" stroke="#3498db" stroke-width="4"/>
+  <path d="M70 96 L86 96 L86 70 L106 70 L106 122 L86 122 L86 96" fill="none" stroke="#2ecc71" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="96" cy="96" r="6" fill="#f39c12"/>
+  <text x="96" y="166" text-anchor="middle" fill="#3498db" font-size="14" font-family="sans-serif" font-weight="bold">HW LAB</text>
+</svg>

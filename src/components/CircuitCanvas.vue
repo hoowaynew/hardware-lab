@@ -208,10 +208,11 @@ function parsePin(str) {
 
 <style scoped>
 .circuit-canvas {
-  background: #1a1a2e;
+  background: var(--canvas-bg);
   border-radius: 12px;
   padding: 16px;
   overflow: hidden;
+  transition: background 0.3s;
 }
 .circuit-svg {
   display: block;
@@ -232,17 +233,17 @@ function parsePin(str) {
   transition: opacity 0.3s;
 }
 .component-label {
-  fill: #aaa;
+  fill: var(--text-dim);
   font-size: 11px;
   font-family: monospace;
 }
 .component-current {
-  fill: #2ecc71;
+  fill: var(--success);
   font-size: 10px;
   font-family: monospace;
 }
 .text-danger {
-  fill: #e74c3c !important;
+  fill: var(--danger) !important;
 }
 .component-burned {
   opacity: 0.3;
