@@ -191,6 +191,72 @@
           </span>
         </div>
       </div>
+
+      <!-- RC滤波器实验布局 -->
+      <div v-else-if="currentExpId === 'rc-filter'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <RCFilterView
+          :simResult="store.simResult?.results?.RF1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- I2C时序实验布局 -->
+      <div v-else-if="currentExpId === 'i2c-signal'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <I2CView
+          :simResult="store.simResult?.results?.I2C1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- NTC测温实验布局 -->
+      <div v-else-if="currentExpId === 'ntc-thermistor'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <NTCThermistorView
+          :simResult="store.simResult?.results?.NTC1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 错误弹窗 -->
@@ -223,6 +289,9 @@ import PwmLoadView from './components/PwmLoadView.vue'
 import VoltageDividerView from './components/VoltageDividerView.vue'
 import CapacitorChargeView from './components/CapacitorChargeView.vue'
 import TransistorSwitchView from './components/TransistorSwitchView.vue'
+import RCFilterView from './components/RCFilterView.vue'
+import I2CView from './components/I2CView.vue'
+import NTCThermistorView from './components/NTCThermistorView.vue'
 
 import ledConfig from './experiments/led-resistor.json'
 import gpioConfig from './experiments/gpio-modes.json'
@@ -230,6 +299,9 @@ import pwmConfig from './experiments/pwm-tuner.json'
 import dividerConfig from './experiments/voltage-divider.json'
 import capacitorConfig from './experiments/capacitor-charge.json'
 import transistorConfig from './experiments/transistor-switch.json'
+import rcFilterConfig from './experiments/rc-filter.json'
+import i2cConfig from './experiments/i2c-signal.json'
+import ntcConfig from './experiments/ntc-thermistor.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -240,7 +312,10 @@ const allExperiments = [
   { id: 'pwm-tuner', icon: '📶', shortTitle: 'PWM调音台', desc: '调节占空比驱动负载', config: pwmConfig },
   { id: 'voltage-divider', icon: '📐', shortTitle: '分压器', desc: 'Vout=Vin×R2/(R1+R2)', config: dividerConfig },
   { id: 'capacitor-charge', icon: '🔋', shortTitle: '电容充放电', desc: 'τ=RC时间常数', config: capacitorConfig },
-  { id: 'transistor-switch', icon: '🔘', shortTitle: '三极管开关', desc: '小电流控制大电流', config: transistorConfig }
+  { id: 'transistor-switch', icon: '🔘', shortTitle: '三极管开关', desc: '小电流控制大电流', config: transistorConfig },
+  { id: 'rc-filter', icon: '〰️', shortTitle: 'RC低通滤波', desc: 'fc=1/(2πRC)', config: rcFilterConfig },
+  { id: 'i2c-signal', icon: '🔗', shortTitle: 'I2C时序', desc: 'SDA/SCL协议解析', config: i2cConfig },
+  { id: 'ntc-thermistor', icon: '🌡️', shortTitle: 'NTC测温', desc: '温度→阻值→ADC', config: ntcConfig }
 ]
 
 const categories = [
@@ -249,8 +324,9 @@ const categories = [
   { id: 'timing', icon: '⏱️', name: '定时与PWM', available: true, experiments: allExperiments.filter(e => e.config.category === 'timing') },
   { id: 'analog', icon: '📊', name: '模拟电路', available: true, experiments: allExperiments.filter(e => e.config.category === 'analog') },
   { id: 'circuit', icon: '🔌', name: '电路基础', available: true, experiments: allExperiments.filter(e => e.config.category === 'circuit') },
-  { id: 'sensor', icon: '📡', name: '传感器接口', available: false, experiments: [] },
-  { id: 'comm', icon: '🔗', name: '通信协议', available: false, experiments: [] },
+  { id: 'signal', icon: '〰️', name: '信号处理', available: true, experiments: allExperiments.filter(e => e.config.category === 'signal') },
+  { id: 'comm', icon: '🔗', name: '通信协议', available: true, experiments: allExperiments.filter(e => e.config.category === 'comm') },
+  { id: 'sensor', icon: '📡', name: '传感器接口', available: true, experiments: allExperiments.filter(e => e.config.category === 'sensor') },
   { id: 'pcb', icon: '🎨', name: 'PCB设计', available: false, experiments: [] },
   { id: 'signal', icon: '〰️', name: '信号处理', available: false, experiments: [] },
   { id: 'wireless', icon: '📶', name: '无线技术', available: false, experiments: [] },
@@ -359,7 +435,8 @@ watch(() => store.errors, (errors) => {
 const categoryLabel = computed(() => {
   const map = {
     power: '⚡ 电源', stm32: '📋 STM32', timing: '⏱️ 定时',
-    analog: '📊 模拟', circuit: '🔌 电路'
+    analog: '📊 模拟', circuit: '🔌 电路',
+    signal: '〰️ 信号', comm: '🔗 通信', sensor: '📡 传感器'
   }
   return map[store.currentExperiment?.category] || ''
 })
@@ -416,6 +493,24 @@ const statusText = computed(() => {
     const ts = results.TS1
     const stateMap = { saturation: '饱和区(ON)', active: '放大区', cutoff: '截止区(OFF)' }
     return `✅ ${stateMap[ts?.state] || '运行中'} | Ic = ${(ts?.collectorCurrent || 0).toFixed(1)}mA`
+  }
+  if (currentExpId.value === 'rc-filter') {
+    const rf = results.RF1
+    const fc = rf?.fcHz || '—'
+    const att = rf?.attenuationDB?.toFixed(1) || 0
+    if (rf?.error) return `⚠️ ${rf.errorTitle || '信号未滤波'}`
+    return `✅ fc=${fc}Hz | 衰减${att}dB | 增益${((rf?.gain || 1) * 100).toFixed(0)}%`
+  }
+  if (currentExpId.value === 'i2c-signal') {
+    const i2c = results.I2C1
+    const stepMap = { idle: '空闲', start: 'START', address: '发送地址', ack1: '等待ACK', data: '发送数据', ack2: '等待ACK', stop: 'STOP' }
+    if (i2c?.error) return `⚠️ ${i2c.errorTitle || 'I2C错误'}`
+    return `✅ ${stepMap[i2c?.step] || '运行中'} | ${i2c?.address || '0x50'} → ${i2c?.data || '0xA5'}`
+  }
+  if (currentExpId.value === 'ntc-thermistor') {
+    const ntc = results.NTC1
+    if (ntc?.error) return `⚠️ ${ntc.errorTitle || 'ADC异常'}`
+    return `✅ ${ntc?.tempC}°C | R=${ntc?.RntcK} | ADC=${ntc?.adcValue}/${ntc?.adcMax} (${ntc?.adcPercent}%)`
   }
   return '✅ 实验运行中'
 })

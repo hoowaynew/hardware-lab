@@ -1,0 +1,89 @@
+{
+  "id": "ntc-thermistor",
+  "topic_id": "sensor-001",
+  "title": "NTC热敏电阻测温：温度→阻值→ADC",
+  "category": "sensor",
+  "difficulty": "intermediate",
+  "description": "调节温度，观察NTC阻值如何随温度变化，ADC读数怎么跳。分压选错了ADC会溢出！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "ntc-sensor",
+        "id": "NTC1",
+        "x": 200,
+        "y": 140,
+        "label": "NTC测温电路",
+        "defaultR25": 10000,
+        "defaultBeta": 3950,
+        "defaultPullup": 10000,
+        "defaultVcc": 3.3,
+        "defaultAdcBits": 12
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "ntcTemp",
+      "min": -20,
+      "max": 100,
+      "step": 1,
+      "default": 25,
+      "unit": "°C",
+      "label": "环境温度"
+    },
+    {
+      "type": "slider",
+      "property": "ntcPullup",
+      "min": 1000,
+      "max": 100000,
+      "step": 1000,
+      "default": 10000,
+      "unit": "Ω",
+      "label": "上拉电阻 Rpullup"
+    },
+    {
+      "type": "slider",
+      "property": "ntcR25",
+      "min": 1000,
+      "max": 100000,
+      "step": 1000,
+      "default": 10000,
+      "unit": "Ω",
+      "label": "NTC标称阻值(R25)"
+    },
+    {
+      "type": "slider",
+      "property": "ntcBeta",
+      "min": 3000,
+      "max": 4500,
+      "step": 10,
+      "default": 3950,
+      "unit": "K",
+      "label": "B值"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "adcValue >= adcMax * 0.95",
+      "type": "NTC_ADC_SATURATION",
+      "title": "ADC饱和！读数不可靠 ⚠️",
+      "explanation": "ADC读数 {adcValue} 接近满量程 {adcMax}。\n低温时NTC阻值大，分压输出接近Vcc。\n减小上拉电阻或换更小R25的NTC。",
+      "article_ref": "sensor-001"
+    },
+    {
+      "condition": "adcValue <= adcMax * 0.05",
+      "type": "NTC_ADC_LOW",
+      "title": "ADC读数太低！精度差 ⚠️",
+      "explanation": "ADC读数 {adcValue} 太小，有效精度不足。\n高温时NTC阻值小，分压输出接近0V。\n增大上拉电阻或换更大R25的NTC。",
+      "article_ref": "sensor-001"
+    }
+  ],
+  "targets": {
+    "perfect": "ADC读数在量程20%~80%范围内，温度测量精度良好",
+    "hint": "NTC阻值: R = R25×exp(B×(1/T-1/298.15))，T为开尔文温度"
+  }
+}

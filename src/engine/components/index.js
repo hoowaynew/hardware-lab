@@ -160,6 +160,39 @@ const componentDefs = {
       shape: 'transistor-switch',
       color: '#e67e22'
     }
+  },
+  'rc-filter': {
+    type: 'rc-filter',
+    label: 'RC滤波器',
+    icon: '〰️',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'rc-filter',
+      color: '#9b59b6'
+    }
+  },
+  'i2c-bus': {
+    type: 'i2c-bus',
+    label: 'I2C总线',
+    icon: '🔗',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'i2c-bus',
+      color: '#1abc9c'
+    }
+  },
+  'ntc-sensor': {
+    type: 'ntc-sensor',
+    label: 'NTC测温',
+    icon: '🌡️',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'ntc-sensor',
+      color: '#e74c3c'
+    }
   }
 }
 

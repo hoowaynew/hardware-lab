@@ -1,0 +1,78 @@
+{
+  "id": "rc-filter",
+  "topic_id": "signal-001",
+  "title": "RC低通滤波器：截止频率 fc = 1/(2πRC)",
+  "category": "signal",
+  "difficulty": "intermediate",
+  "description": "调节R和C，观察方波输入如何变成平滑波形。截止频率决定什么被滤掉！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "rc-filter",
+        "id": "RF1",
+        "x": 200,
+        "y": 140,
+        "label": "RC滤波器",
+        "defaultR": 1000,
+        "defaultC": 10,
+        "defaultFreq": 100,
+        "defaultInputType": "square"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "rfResistance",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Ω",
+      "label": "电阻 R"
+    },
+    {
+      "type": "slider",
+      "property": "rfCapacitance",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "default": 10,
+      "unit": "μF",
+      "label": "电容 C"
+    },
+    {
+      "type": "slider",
+      "property": "rfFrequency",
+      "min": 1,
+      "max": 10000,
+      "step": 1,
+      "default": 100,
+      "unit": "Hz",
+      "label": "输入信号频率"
+    },
+    {
+      "type": "toggle",
+      "property": "rfInputType",
+      "values": ["square", "sine"],
+      "labels": ["方波", "正弦波"],
+      "label": "输入波形"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "inputFreq < cutoffFreq && attenuation > -3",
+      "type": "RF_NOT_FILTERING",
+      "title": "信号直接通过，没有滤波效果",
+      "explanation": "输入频率 {inputFreq}Hz 低于截止频率 {cutoffFreq}Hz，信号几乎无衰减通过。\n提高输入频率才能看到滤波效果。",
+      "article_ref": "signal-001"
+    }
+  ],
+  "targets": {
+    "perfect": "理解fc=1/(2πRC)，观察频率高于fc时信号被衰减",
+    "hint": "fc=1/(2πRC)，高于fc的频率被衰减-20dB/十倍频"
+  }
+}

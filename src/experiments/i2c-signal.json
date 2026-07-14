@@ -1,0 +1,81 @@
+{
+  "id": "i2c-signal",
+  "topic_id": "comm-001",
+  "title": "I2C通信时序：SDA/SCL协议解析",
+  "category": "comm",
+  "difficulty": "intermediate",
+  "description": "一步步发送START、地址、数据、STOP，看I2C总线波形如何变化。时序错了通信就挂！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "i2c-bus",
+        "id": "I2C1",
+        "x": 200,
+        "y": 140,
+        "label": "I2C总线",
+        "defaultAddress": "0x50",
+        "defaultData": "0xA5",
+        "defaultClockFreq": 100
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "toggle",
+      "property": "i2cStep",
+      "values": ["idle", "start", "address", "ack1", "data", "ack2", "stop"],
+      "labels": ["空闲", "START", "发送地址", "ACK1", "发送数据", "ACK2", "STOP"],
+      "label": "I2C时序步骤"
+    },
+    {
+      "type": "slider",
+      "property": "i2cAddress",
+      "min": 1,
+      "max": 127,
+      "step": 1,
+      "default": 80,
+      "unit": "(0x50)",
+      "label": "从机地址 (7-bit)"
+    },
+    {
+      "type": "slider",
+      "property": "i2cData",
+      "min": 0,
+      "max": 255,
+      "step": 1,
+      "default": 165,
+      "unit": "(0xA5)",
+      "label": "数据字节 (8-bit)"
+    },
+    {
+      "type": "toggle",
+      "property": "i2cAckError",
+      "values": [false, true],
+      "labels": ["正常ACK", "无ACK(设备不响应)"],
+      "label": "ACK响应"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "ackError && step === 'ack1'",
+      "type": "I2C_NACK",
+      "title": "NACK！从机没有响应 ⚠️",
+      "explanation": "地址 {address} 的设备返回NACK。\n可能原因：设备未连接、地址错误、设备忙。",
+      "article_ref": "comm-001"
+    },
+    {
+      "condition": "step === 'data' && step === 'idle'",
+      "type": "I2C_ORDER_ERROR",
+      "title": "时序错误！跳过START直接发数据",
+      "explanation": "I2C必须按顺序：START → 地址 → ACK → 数据 → ACK → STOP。\n跳过任何步骤都会导致通信失败。",
+      "article_ref": "comm-001"
+    }
+  ],
+  "targets": {
+    "perfect": "完整走完I2C时序：START→地址→ACK→数据→ACK→STOP",
+    "hint": "START: SCL高时SDA下降沿；STOP: SCL高时SDA上升沿"
+  }
+}

@@ -225,6 +225,9 @@ export class Simulator {
       pwm: () => this._simulatePWM(comp),
       'capacitor-charge': () => this._simulateCapacitorCharge(comp),
       'transistor-switch': () => this._simulateTransistorSwitch(comp),
+      'rc-filter': () => this._simulateRCFilter(comp),
+      'i2c-bus': () => this._simulateI2C(comp),
+      'ntc-sensor': () => this._simulateNTC(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -622,6 +625,299 @@ export class Simulator {
       result.error = 'TS_POWER_DISSIPATION'
       result.errorTitle = '功耗过大! 🔥'
       result.errorExplanation = `P = Vce x Ic = ${power.toFixed(0)}mW exceeds 500mW.\nTransistor may overheat.`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真RC低通滤波器
+   * fc = 1/(2πRC), 增益 = 1/√(1+(f/fc)²)
+   */
+  _simulateRCFilter(comp) {
+    const R = this.context.rfResistance || comp.defaultR || 1000
+    const C = this.context.rfCapacitance || comp.defaultC || 10 // μF
+    const inputFreq = this.context.rfFrequency || comp.defaultFreq || 100
+    const inputType = this.context.rfInputType || comp.defaultInputType || 'square'
+
+    // fc = 1/(2πRC), R in Ohm, C in μF → convert to F: C/1e6
+    const fc = 1 / (2 * Math.PI * R * (C / 1e6))
+    // gain at input frequency
+    const ratio = inputFreq / fc
+    const gain = 1 / Math.sqrt(1 + ratio * ratio)
+    const attenuationDB = 20 * Math.log10(gain)
+
+    // generate input + output waveform (60 points, 2 cycles)
+    const points = 120
+    const inputCurve = []
+    const outputCurve = []
+    const period = 1 / inputFreq
+    const totalTime = period * 2
+
+    for (let i = 0; i <= points; i++) {
+      const t = (i / points) * totalTime
+      let inputV
+      if (inputType === 'square') {
+        // square wave: high for first half, low for second half
+        const phase = (t % period) / period
+        inputV = phase < 0.5 ? 1 : 0
+      } else {
+        // sine wave
+        inputV = 0.5 + 0.5 * Math.sin(2 * Math.PI * inputFreq * t)
+      }
+      // output: RC low-pass response
+      // for square wave, approximate with exponential charge/discharge
+      let outputV
+      if (inputType === 'square') {
+        const phase = (t % period) / period
+        const halfPeriod = period / 2
+        if (phase < 0.5) {
+          // charging: Vout = 1 - exp(-t/halfPeriod * τ_factor)
+          const elapsed = phase * period
+          const tau = R * (C / 1e6)
+          outputV = 1 - Math.exp(-elapsed / tau)
+        } else {
+          // discharging
+          const elapsed = (phase - 0.5) * period
+          const tau = R * (C / 1e6)
+          const startV = 1 - Math.exp(-halfPeriod / tau)
+          outputV = startV * Math.exp(-elapsed / tau)
+        }
+      } else {
+        // sine: attenuated and phase-shifted
+        const phaseShift = Math.atan(ratio)
+        outputV = gain * 0.5 * Math.sin(2 * Math.PI * inputFreq * t - phaseShift) + 0.5
+      }
+      inputCurve.push({ t: t * 1000, v: inputV })
+      outputCurve.push({ t: t * 1000, v: outputV })
+    }
+
+    const result = {
+      resistance: R,
+      capacitance: C,
+      inputFreq,
+      fc,
+      fcHz: fc < 1 ? fc.toFixed(4) : fc < 1000 ? fc.toFixed(1) : (fc / 1000).toFixed(1) + 'k',
+      gain,
+      attenuationDB,
+      inputType,
+      inputCurve,
+      outputCurve,
+      loadState: 'running'
+    }
+
+    // not filtering warning (input freq well below fc)
+    if (inputFreq < fc * 0.5) {
+      result.error = 'RF_NOT_FILTERING'
+      result.errorTitle = '信号直接通过，没有滤波效果'
+      result.errorExplanation = `输入频率 ${inputFreq}Hz 低于截止频率 ${fc.toFixed(1)}Hz，信号几乎无衰减通过。\n提高输入频率才能看到滤波效果。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真I2C总线时序
+   * START → 7-bit地址+R/W → ACK → 8-bit数据 → ACK → STOP
+   */
+  _simulateI2C(comp) {
+    const step = this.context.i2cStep || 'idle'
+    const address = this.context.i2cAddress || 80 // 0x50
+    const data = this.context.i2cData || 165 // 0xA5
+    const ackError = this.context.i2cAckError || false
+
+    // generate SDA/SCL waveform based on current step
+    const waveforms = this._generateI2CWaveforms(step, address, data, ackError)
+
+    const result = {
+      step,
+      address: '0x' + address.toString(16).toUpperCase().padStart(2, '0'),
+      addressDec: address,
+      data: '0x' + data.toString(16).toUpperCase().padStart(2, '0'),
+      dataDec: data,
+      dataBits: data.toString(2).padStart(8, '0'),
+      addressBits: address.toString(2).padStart(7, '0') + '0', // 7-bit + W(0)
+      ackError,
+      sdaWave: waveforms.sda,
+      sclWave: waveforms.scl,
+      annotations: waveforms.annotations,
+      loadState: 'running'
+    }
+
+    // NACK error
+    if (ackError && (step === 'ack1' || step === 'ack2')) {
+      result.error = 'I2C_NACK'
+      result.errorTitle = 'NACK！从机没有响应 ⚠️'
+      result.errorExplanation = `地址 0x${address.toString(16).toUpperCase()} 的设备返回NACK。\n可能原因：设备未连接、地址错误、设备忙。`
+    }
+
+    // order error: data/ack2/stop without start
+    const stepOrder = ['idle', 'start', 'address', 'ack1', 'data', 'ack2', 'stop']
+    const currentIdx = stepOrder.indexOf(step)
+    if (currentIdx > 1 && !ackError) {
+      // this is fine, just normal progression
+    }
+
+    return result
+  }
+
+  /**
+   * 生成I2C SDA/SCL波形
+   */
+  _generateI2CWaveforms(step, address, data, ackError) {
+    const stepOrder = ['idle', 'start', 'address', 'ack1', 'data', 'ack2', 'stop']
+    const currentIdx = stepOrder.indexOf(step)
+
+    // Build cumulative waveform up to current step
+    const segments = []
+    const sda = []
+    const scl = []
+    const annotations = []
+    let t = 0
+    const bitTime = 2 // 2 time units per bit (SCL low + SCL high)
+
+    // Helper: push a bit segment
+    const pushBit = (bit, label) => {
+      // SCL low phase (data change)
+      sda.push({ t, v: bit })
+      scl.push({ t, v: 0 })
+      t += 1
+      // SCL high phase (data stable)
+      sda.push({ t, v: bit })
+      scl.push({ t, v: 1 })
+      annotations.push({ t: t - 0.5, label })
+      t += 1
+    }
+
+    // Idle
+    sda.push({ t, v: 1 })
+    scl.push({ t, v: 1 })
+    t += 1
+
+    // START condition (SCL high, SDA goes high→low)
+    if (currentIdx >= 1) {
+      sda.push({ t: t - 0.5, v: 1 })
+      scl.push({ t: t - 0.5, v: 1 })
+      sda.push({ t, v: 0 })
+      scl.push({ t, v: 1 })
+      annotations.push({ t, label: 'START' })
+      t += 1
+    }
+
+    // Address (7 bits + R/W=0)
+    if (currentIdx >= 2) {
+      const addrBits = address.toString(2).padStart(7, '0')
+      for (let i = 0; i < 7; i++) {
+        pushBit(parseInt(addrBits[i]), `A${6 - i}`)
+      }
+      pushBit(0, 'W') // Write bit
+    }
+
+    // ACK1
+    if (currentIdx >= 3) {
+      const ackBit = ackError ? 1 : 0 // NACK=1, ACK=0
+      pushBit(ackBit, ackError ? 'NACK' : 'ACK')
+    }
+
+    // Data (8 bits)
+    if (currentIdx >= 4) {
+      const dataBits = data.toString(2).padStart(8, '0')
+      for (let i = 0; i < 8; i++) {
+        pushBit(parseInt(dataBits[i]), `D${7 - i}`)
+      }
+    }
+
+    // ACK2
+    if (currentIdx >= 5) {
+      const ackBit = ackError ? 1 : 0
+      pushBit(ackBit, ackError ? 'NACK' : 'ACK')
+    }
+
+    // STOP (SCL high, SDA goes low→high)
+    if (currentIdx >= 6) {
+      sda.push({ t, v: 0 })
+      scl.push({ t, v: 0 })
+      t += 0.5
+      sda.push({ t, v: 0 })
+      scl.push({ t, v: 1 })
+      t += 0.5
+      sda.push({ t, v: 1 })
+      scl.push({ t, v: 1 })
+      annotations.push({ t, label: 'STOP' })
+      t += 1
+    }
+
+    // Trailing idle
+    sda.push({ t, v: 1 })
+    scl.push({ t, v: 1 })
+    t += 1
+
+    return { sda, scl, annotations }
+  }
+
+  /**
+   * 仿真NTC热敏电阻测温
+   * R(T) = R25 × exp(B × (1/T - 1/T25))
+   * 分压: Vout = Vcc × Rntc/(Rpullup + Rntc)  (NTC接地式)
+   * ADC: adcValue = Vout/Vcc × (2^bits - 1)
+   */
+  _simulateNTC(comp) {
+    const tempC = this.context.ntcTemp !== undefined ? this.context.ntcTemp : 25
+    const R25 = this.context.ntcR25 || comp.defaultR25 || 10000
+    const beta = this.context.ntcBeta || comp.defaultBeta || 3950
+    const Rpullup = this.context.ntcPullup || comp.defaultPullup || 10000
+    const Vcc = comp.defaultVcc || 3.3
+    const adcBits = comp.defaultAdcBits || 12
+
+    // NTC resistance using B-parameter equation
+    const T25 = 298.15 // 25°C in Kelvin
+    const T = tempC + 273.15
+    const Rntc = R25 * Math.exp(beta * (1 / T - 1 / T25))
+
+    // Voltage divider (NTC to GND, pullup to Vcc)
+    const Vout = Vcc * Rntc / (Rpullup + Rntc)
+
+    // ADC value
+    const adcMax = Math.pow(2, adcBits) - 1
+    const adcValue = Math.round(Vout / Vcc * adcMax)
+
+    // Temperature resolution (dADC/dT)
+    const temp2 = tempC + 1
+    const T2 = temp2 + 273.15
+    const Rntc2 = R25 * Math.exp(beta * (1 / T2 - 1 / T25))
+    const Vout2 = Vcc * Rntc2 / (Rpullup + Rntc2)
+    const adc2 = Math.round(Vout2 / Vcc * adcMax)
+    const adcResolution = Math.abs(adcValue - adc2) // ADC counts per °C
+
+    const result = {
+      tempC,
+      R25,
+      beta,
+      Rpullup,
+      Rntc,
+      RntcK: Rntc >= 1000 ? (Rntc / 1000).toFixed(2) + 'kΩ' : Rntc.toFixed(0) + 'Ω',
+      Vcc,
+      Vout,
+      adcBits,
+      adcMax,
+      adcValue,
+      adcPercent: (adcValue / adcMax * 100).toFixed(1),
+      adcResolution,
+      loadState: 'running'
+    }
+
+    // ADC saturation warning
+    if (adcValue >= adcMax * 0.95) {
+      result.error = 'NTC_ADC_SATURATION'
+      result.errorTitle = 'ADC饱和！读数不可靠 ⚠️'
+      result.errorExplanation = `ADC读数 ${adcValue} 接近满量程 ${adcMax}。\n低温时NTC阻值大，分压输出接近Vcc。\n减小上拉电阻或换更小R25的NTC。`
+    }
+
+    // ADC too low
+    if (adcValue <= adcMax * 0.05) {
+      result.error = 'NTC_ADC_LOW'
+      result.errorTitle = 'ADC读数太低！精度差 ⚠️'
+      result.errorExplanation = `ADC读数 ${adcValue} 太小，有效精度不足。\n高温时NTC阻值小，分压输出接近0V。\n增大上拉电阻或换更大R25的NTC。`
     }
 
     return result
