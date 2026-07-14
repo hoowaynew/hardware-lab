@@ -193,6 +193,39 @@ const componentDefs = {
       shape: 'ntc-sensor',
       color: '#e74c3c'
     }
+  },
+  'pcb-trace': {
+    type: 'pcb-trace',
+    label: 'PCB走线',
+    icon: '🎨',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'pcb-trace',
+      color: '#2ecc71'
+    }
+  },
+  'wifi-link': {
+    type: 'wifi-link',
+    label: 'WiFi链路',
+    icon: '📶',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'wifi-link',
+      color: '#3498db'
+    }
+  },
+  'logic-analyzer': {
+    type: 'logic-analyzer',
+    label: '逻辑分析仪',
+    icon: '🐛',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'logic-analyzer',
+      color: '#9b59b6'
+    }
   }
 }
 

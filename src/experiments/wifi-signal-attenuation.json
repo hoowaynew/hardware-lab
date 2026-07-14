@@ -1,0 +1,84 @@
+{
+  "id": "wifi-signal-attenuation",
+  "topic_id": "wireless-001",
+  "title": "WiFi信号衰减：链路预算与穿墙损耗",
+  "category": "wireless",
+  "difficulty": "intermediate",
+  "description": "调节发射功率、距离、障碍物，看信号强度怎么掉。穿两堵墙信号就没了！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "wifi-link",
+        "id": "WIFI1",
+        "x": 200,
+        "y": 140,
+        "label": "WiFi链路",
+        "defaultTxPower": 20,
+        "defaultTxAntennaGain": 2,
+        "defaultRxAntennaGain": 2,
+        "defaultRxFreq": 2412,
+        "defaultDistance": 10,
+        "defaultWalls": 1,
+        "defaultRxSensitivity": -82
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "wifiTxPower",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "default": 20,
+      "unit": "dBm",
+      "label": "发射功率"
+    },
+    {
+      "type": "slider",
+      "property": "wifiDistance",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "default": 10,
+      "unit": "m",
+      "label": "传输距离"
+    },
+    {
+      "type": "slider",
+      "property": "wifiFreq",
+      "min": 2412,
+      "max": 5825,
+      "step": 1,
+      "default": 2412,
+      "unit": "MHz",
+      "label": "工作频率"
+    },
+    {
+      "type": "slider",
+      "property": "wifiWalls",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "default": 1,
+      "unit": "堵",
+      "label": "障碍墙数"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "rssi < rxSensitivity",
+      "type": "WIFI_SIGNAL_TOO_WEAK",
+      "title": "信号太弱！无法接收 ⚠️",
+      "explanation": "接收信号强度 {rssi}dBm 低于接收灵敏度 {rxSensitivity}dBm。\n信号被障碍物衰减过多，链路预算不足。\n缩短距离、减少障碍、或增大发射功率。",
+      "article_ref": "wireless-001"
+    }
+  ],
+  "targets": {
+    "perfect": "RSSI ≥ -65dBm，信号质量良好",
+    "hint": "自由空间损耗: FSPL(dB) = 20log₁₀(d) + 20log₁₀(f) + 32.44"
+  }
+}

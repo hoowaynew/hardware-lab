@@ -137,6 +137,68 @@
       <line x1="24" y1="25" x2="35" y2="15" :stroke="color" stroke-width="2"/>
     </template>
 
+    <!-- RC滤波器（standalone） -->
+    <template v-else-if="type === 'rc-filter'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="18" text-anchor="middle" :fill="color" font-size="8" font-weight="bold">RC LPF</text>
+      <line x1="10" y1="30" x2="20" y2="30" :stroke="color" stroke-width="1.5"/>
+      <rect x="20" y="26" width="8" height="8" rx="1" fill="none" :stroke="color" stroke-width="1.5"/>
+      <line x1="28" y1="30" x2="38" y2="30" :stroke="color" stroke-width="1.5"/>
+      <path d="M38 30 Q40 26 42 30 Q44 34 46 30" fill="none" :stroke="color" stroke-width="1" opacity="0.5"/>
+    </template>
+
+    <!-- I2C总线（standalone） -->
+    <template v-else-if="type === 'i2c-bus'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="18" text-anchor="middle" :fill="color" font-size="8" font-weight="bold">I2C</text>
+      <line x1="10" y1="28" x2="40" y2="28" stroke="#3498db" stroke-width="2"/>
+      <text x="12" y="26" fill="#3498db" font-size="7">SDA</text>
+      <line x1="10" y1="38" x2="40" y2="38" stroke="#f39c12" stroke-width="2"/>
+      <text x="12" y="36" fill="#f39c12" font-size="7">SCL</text>
+    </template>
+
+    <!-- NTC测温（standalone） -->
+    <template v-else-if="type === 'ntc-sensor'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="18" text-anchor="middle" :fill="color" font-size="8" font-weight="bold">NTC</text>
+      <path d="M15 30 L20 25 L25 32 L30 26 L35 31" fill="none" :stroke="color" stroke-width="2"/>
+      <text x="25" y="42" text-anchor="middle" :fill="color" font-size="7">10kΩ</text>
+    </template>
+
+    <!-- PCB走线（standalone） -->
+    <template v-else-if="type === 'pcb-trace'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#0a3a1a" :stroke="color" stroke-width="2"/>
+      <text x="25" y="15" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">PCB</text>
+      <!-- 走线 -->
+      <path d="M5 25 L15 25 L15 35 L35 35 L35 25 L45 25" fill="none" stroke="#f1c40f" stroke-width="2.5"/>
+      <!-- 焊盘 -->
+      <circle cx="5" cy="25" r="2.5" fill="#e67e22"/>
+      <circle cx="45" cy="25" r="2.5" fill="#e67e22"/>
+      <text x="25" y="45" text-anchor="middle" fill="#888" font-size="6">microstrip</text>
+    </template>
+
+    <!-- WiFi链路（standalone） -->
+    <template v-else-if="type === 'wifi-link'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="14" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">WiFi</text>
+      <!-- WiFi信号弧线 -->
+      <path d="M15 35 Q25 20 35 35" fill="none" :stroke="color" stroke-width="2"/>
+      <path d="M18 35 Q25 25 32 35" fill="none" :stroke="color" stroke-width="1.5" opacity="0.6"/>
+      <path d="M21 35 Q25 30 29 35" fill="none" :stroke="color" stroke-width="1" opacity="0.3"/>
+      <circle cx="25" cy="36" r="2" :fill="color"/>
+    </template>
+
+    <!-- 逻辑分析仪（standalone） -->
+    <template v-else-if="type === 'logic-analyzer'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="13" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">LA</text>
+      <!-- 4路信号波形 -->
+      <path d="M5 18 L15 18 L15 24 L25 24 L25 18 L35 18 L35 24 L45 24" fill="none" stroke="#e74c3c" stroke-width="1"/>
+      <path d="M5 28 L12 28 L12 34 L20 34 L20 28 L28 28 L28 34 L36 34 L36 28 L45 28" fill="none" stroke="#f39c12" stroke-width="1"/>
+      <path d="M5 38 L45 38" fill="none" stroke="#2ecc71" stroke-width="1"/>
+      <path d="M5 44 L45 44" fill="none" stroke="#3498db" stroke-width="1"/>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

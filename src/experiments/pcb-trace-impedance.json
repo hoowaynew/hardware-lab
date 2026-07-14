@@ -1,0 +1,81 @@
+{
+  "id": "pcb-trace-impedance",
+  "topic_id": "pcb-001",
+  "title": "PCB走线阻抗控制：微带线阻抗计算器",
+  "category": "pcb",
+  "difficulty": "intermediate",
+  "description": "调节线宽、铜厚、介质厚度，观察50Ω阻抗匹配。走线太细阻抗太高，信号反射！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "pcb-trace",
+        "id": "PCB1",
+        "x": 200,
+        "y": 140,
+        "label": "PCB微带线",
+        "defaultEr": 4.4,
+        "defaultH": 0.36,
+        "defaultW": 0.7,
+        "defaultT": 0.035
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "pcbTraceWidth",
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.05,
+      "default": 0.7,
+      "unit": "mm",
+      "label": "走线宽度 W"
+    },
+    {
+      "type": "slider",
+      "property": "pcbDielectricH",
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.02,
+      "default": 0.36,
+      "unit": "mm",
+      "label": "介质厚度 H"
+    },
+    {
+      "type": "slider",
+      "property": "pcbEr",
+      "min": 2.0,
+      "max": 10.0,
+      "step": 0.1,
+      "default": 4.4,
+      "unit": "",
+      "label": "介电常数 εr"
+    },
+    {
+      "type": "slider",
+      "property": "pcbCopperT",
+      "min": 0.009,
+      "max": 0.105,
+      "step": 0.001,
+      "default": 0.035,
+      "unit": "mm",
+      "label": "铜厚 T"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "impedance > 75 || impedance < 30",
+      "type": "PCB_IMP_MISMATCH",
+      "title": "阻抗失配！信号反射 ⚠️",
+      "explanation": "走线阻抗 {impedance}Ω 偏离目标50Ω过大。\n高频信号会产生反射，导致信号完整性问题。\n调整W和H使阻抗接近50Ω。",
+      "article_ref": "pcb-001"
+    }
+  ],
+  "targets": {
+    "perfect": "走线阻抗在45~55Ω范围内，50Ω匹配良好",
+    "hint": "微带线阻抗: Z0 = 87/√(εr+1.41) × ln(5.98×H/(0.8×W+T))"
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "id": "logic-analyzer-debug",
+  "topic_id": "debug-001",
+  "title": "逻辑分析仪调试：SPI信号解码找Bug",
+  "category": "debug",
+  "difficulty": "advanced",
+  "description": "逐步触发SPI通信各阶段，观察4路信号时序。CPOL/CPHA配错了数据全乱！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "logic-analyzer",
+        "id": "LA1",
+        "x": 200,
+        "y": 140,
+        "label": "逻辑分析仪",
+        "defaultCpol": 0,
+        "defaultCpha": 0,
+        "defaultClockFreq": 1000,
+        "defaultData": 170
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "select",
+      "property": "laCpol",
+      "options": [
+        { "value": 0, "icon": "0", "label": "空闲低" },
+        { "value": 1, "icon": "1", "label": "空闲高" }
+      ],
+      "default": 0,
+      "label": "CPOL (时钟极性)"
+    },
+    {
+      "type": "select",
+      "property": "laCpha",
+      "options": [
+        { "value": 0, "icon": "0", "label": "第一边沿" },
+        { "value": 1, "icon": "1", "label": "第二边沿" }
+      ],
+      "default": 0,
+      "label": "CPHA (时钟相位)"
+    },
+    {
+      "type": "slider",
+      "property": "laClockFreq",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "kHz",
+      "label": "时钟频率"
+    },
+    {
+      "type": "slider",
+      "property": "laDataByte",
+      "min": 0,
+      "max": 255,
+      "step": 1,
+      "default": 170,
+      "unit": "",
+      "label": "发送数据 (0-255)"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "cpol !== expectedCpol || cpha !== expectedCpha",
+      "type": "SPI_MODE_MISMATCH",
+      "title": "SPI模式不匹配！数据错位 ⚠️",
+      "explanation": "主机用 Mode {actualMode}，从机期望 Mode {expectedMode}。\nCPOL/CPHA不一致导致采样边沿错误，数据全乱。\n确认主从双方使用相同的SPI模式。",
+      "article_ref": "debug-001"
+    }
+  ],
+  "targets": {
+    "perfect": "CPOL=0 CPHA=0 (Mode 0)，与从机匹配，数据正确解码",
+    "hint": "SPI 4种模式: Mode0(CPOL=0,CPHA=0) Mode1(0,1) Mode2(1,0) Mode3(1,1)"
+  }
+}

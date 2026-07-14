@@ -228,6 +228,9 @@ export class Simulator {
       'rc-filter': () => this._simulateRCFilter(comp),
       'i2c-bus': () => this._simulateI2C(comp),
       'ntc-sensor': () => this._simulateNTC(comp),
+      'pcb-trace': () => this._simulatePCBTrace(comp),
+      'wifi-link': () => this._simulateWiFi(comp),
+      'logic-analyzer': () => this._simulateLogicAnalyzer(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -921,5 +924,299 @@ export class Simulator {
     }
 
     return result
+  }
+
+  /**
+   * 仿真PCB微带线阻抗
+   * Z0 = 87/sqrt(εr+1.41) × ln(5.98×H/(0.8×W+T))
+   * 适用范围: 0.1 < W/H < 2.0, 1 < εr < 15
+   */
+  _simulatePCBTrace(comp) {
+    const W = this.context.pcbTraceWidth || comp.defaultW || 0.7 // mm
+    const H = this.context.pcbDielectricH || comp.defaultH || 0.36 // mm
+    const er = this.context.pcbEr || comp.defaultEr || 4.4
+    const T = this.context.pcbCopperT || comp.defaultT || 0.035 // mm
+
+    // Microstrip impedance (Hammerstad-Jensen simplified)
+    const effectiveEr = (er + 1) / 2 + (er - 1) / 2 * 1 / Math.sqrt(1 + 12 * H / W)
+    const w1 = W
+    const w2 = W + T * 0.0 // simplified, ignore T correction for width
+    const ratio = 5.98 * H / (0.8 * W + T)
+    const z0 = 87 / Math.sqrt(er + 1.41) * Math.log(ratio)
+
+    // Target 50Ω
+    const targetZ = 50
+    const deviation = Math.abs(z0 - targetZ)
+
+    // Capacitance per unit length (pF/cm): C = sqrt(εeff) / (c × Z0) × 1e12
+    // Simplified: C ≈ 1.44×εeff*W/H (pF/cm) for microstrip
+    const capacitance = 1.44 * effectiveEr * W / H // pF/cm (approx)
+
+    // Propagation delay (ps/mm): td = sqrt(εeff) / c
+    const c_speed = 3e8 // m/s
+    const propDelay = Math.sqrt(effectiveEr) / c_speed * 1e12 / 1e3 // ps/mm
+
+    const result = {
+      traceWidth: W,
+      dielectricH: H,
+      er,
+      copperT: T,
+      effectiveEr: parseFloat(effectiveEr.toFixed(3)),
+      impedance: parseFloat(z0.toFixed(1)),
+      targetZ,
+      deviation: parseFloat(deviation.toFixed(1)),
+      capacitance: parseFloat(capacitance.toFixed(2)),
+      propDelay: parseFloat(propDelay.toFixed(3)),
+      loadState: 'running'
+    }
+
+    // Impedance mismatch warning
+    if (deviation > 15) {
+      result.error = 'PCB_IMP_MISMATCH'
+      result.errorTitle = '阻抗失配！信号反射 ⚠️'
+      result.errorExplanation = `走线阻抗 ${z0.toFixed(1)}Ω 偏离目标50Ω达${deviation.toFixed(1)}Ω。\n高频信号会产生反射，导致信号完整性问题。\n${z0 > 50 ? '增大线宽W或减小介质厚度H可降低阻抗' : '减小线宽W或增大介质厚度H可提高阻抗'}。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真WiFi信号衰减（链路预算）
+   * FSPL(dB) = 20log10(d) + 20log10(f_MHz) + 32.44
+   * RSSI = TxPower + TxGain + RxGain - FSPL - wallLoss
+   */
+  _simulateWiFi(comp) {
+    const txPower = this.context.wifiTxPower || comp.defaultTxPower || 20 // dBm
+    const txGain = comp.defaultTxAntennaGain || 2 // dBi
+    const rxGain = comp.defaultRxAntennaGain || 2 // dBi
+    const freq = this.context.wifiFreq || comp.defaultRxFreq || 2412 // MHz
+    const distance = this.context.wifiDistance || comp.defaultDistance || 10 // m
+    const walls = this.context.wifiWalls !== undefined ? this.context.wifiWalls : comp.defaultWalls ?? 1
+    const rxSensitivity = comp.defaultRxSensitivity || -82 // dBm
+
+    // Free Space Path Loss
+    const fspl = 20 * Math.log10(distance) + 20 * Math.log10(freq) + 32.44
+
+    // Wall attenuation (approx 8dB per wall for 2.4GHz, 12dB for 5GHz)
+    const wallLossPerWall = freq > 4000 ? 12 : 8
+    const totalWallLoss = walls * wallLossPerWall
+
+    // RSSI at receiver
+    const rssi = txPower + txGain + rxGain - fspl - totalWallLoss
+
+    // Signal quality categories
+    let quality = 'excellent'
+    let qualityPct = 100
+    if (rssi < -50) { quality = 'good'; qualityPct = 75 }
+    if (rssi < -65) { quality = 'fair'; qualityPct = 50 }
+    if (rssi < -75) { quality = 'poor'; qualityPct = 25 }
+    if (rssi < rxSensitivity) { quality = 'none'; qualityPct = 0 }
+
+    // Link budget margin
+    const margin = rssi - rxSensitivity
+
+    // Determine band
+    const band = freq < 3000 ? '2.4GHz' : '5GHz'
+
+    const result = {
+      txPower,
+      txGain,
+      rxGain,
+      freq,
+      band,
+      distance,
+      walls,
+      wallLossPerWall,
+      totalWallLoss,
+      fspl: parseFloat(fspl.toFixed(1)),
+      rssi: parseFloat(rssi.toFixed(1)),
+      rxSensitivity,
+      margin: parseFloat(margin.toFixed(1)),
+      quality,
+      qualityPct,
+      loadState: 'running'
+    }
+
+    // Signal too weak
+    if (rssi < rxSensitivity) {
+      result.error = 'WIFI_SIGNAL_TOO_WEAK'
+      result.errorTitle = '信号太弱！无法接收 ⚠️'
+      result.errorExplanation = `接收信号强度 ${rssi.toFixed(1)}dBm 低于接收灵敏度 ${rxSensitivity}dBm。\n信号被障碍物衰减过多，链路预算不足${margin.toFixed(1)}dB。\n缩短距离、减少障碍、或增大发射功率。`
+    } else if (margin < 10) {
+      result.error = 'WIFI_MARGIN_LOW'
+      result.errorTitle = '链路余量不足！信号不稳定 ⚠️'
+      result.errorExplanation = `链路余量仅 ${margin.toFixed(1)}dB，建议至少10dB以上。\n稍有干扰就会断连，考虑缩短距离或减少障碍墙。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真逻辑分析仪SPI信号解码
+   * SPI 4种模式: CPOL×CPHA = Mode0~3
+   * 4路信号: CS, SCLK, MOSI, MISO
+   */
+  _simulateLogicAnalyzer(comp) {
+    const cpol = this.context.laCpol !== undefined ? this.context.laCpol : comp.defaultCpol
+    const cpha = this.context.laCpha !== undefined ? this.context.laCpha : comp.defaultCpha
+    const clockFreq = this.context.laClockFreq || comp.defaultClockFreq || 1000 // kHz
+    const dataByte = this.context.laDataByte !== undefined ? this.context.laDataByte : comp.defaultData
+
+    // SPI mode
+    const mode = cpol * 2 + cpha
+    const modeNames = ['Mode 0', 'Mode 1', 'Mode 2', 'Mode 3']
+
+    // Expected mode by slave (always Mode 0 for this demo)
+    const expectedCpol = 0
+    const expectedCpha = 0
+    const expectedMode = 0
+    const modeMismatch = cpol !== expectedCpol || cpha !== expectedCpha
+
+    // Generate 4-channel waveform
+    const waveforms = this._generateSPIWaveforms(cpol, cpha, clockFreq, dataByte)
+
+    // Decode data based on mode
+    const decodedByte = modeMismatch ? this._corruptByte(dataByte, mode) : dataByte
+
+    // Timebase
+    const period = 1000 / clockFreq // μs per clock cycle
+    const totalTime = period * 8 // 8 bits
+
+    const result = {
+      cpol,
+      cpha,
+      mode,
+      modeName: modeNames[mode],
+      expectedMode,
+      expectedModeName: modeNames[expectedMode],
+      modeMismatch,
+      clockFreq,
+      period: parseFloat(period.toFixed(3)),
+      totalTime: parseFloat(totalTime.toFixed(3)),
+      dataByte,
+      dataHex: '0x' + dataByte.toString(16).toUpperCase().padStart(2, '0'),
+      dataBits: dataByte.toString(2).padStart(8, '0'),
+      decodedByte,
+      decodedHex: '0x' + decodedByte.toString(16).toUpperCase().padStart(2, '0'),
+      decodedBits: decodedByte.toString(2).padStart(8, '0'),
+      csWave: waveforms.cs,
+      sclkWave: waveforms.sclk,
+      mosiWave: waveforms.mosi,
+      misoWave: waveforms.miso,
+      annotations: waveforms.annotations,
+      loadState: 'running'
+    }
+
+    if (modeMismatch) {
+      result.error = 'SPI_MODE_MISMATCH'
+      result.errorTitle = 'SPI模式不匹配！数据错位 ⚠️'
+      result.errorExplanation = `主机用 ${modeNames[mode]}，从机期望 ${modeNames[expectedMode]}。\nCPOL/CPHA不一致导致采样边沿错误。\n发送 ${result.dataHex} → 解码为 ${result.decodedHex}，数据全乱。`
+    }
+
+    return result
+  }
+
+  /**
+   * 生成SPI 4路信号波形
+   */
+  _generateSPIWaveforms(cpol, cpha, clockFreq, dataByte) {
+    const period = 1000 / clockFreq // μs
+    const cs = []
+    const sclk = []
+    const mosi = []
+    const miso = []
+    const annotations = []
+
+    // Idle SCLK level = CPOL
+    const idleLevel = cpol
+    const activeLevel = 1 - cpol
+
+    // Pre-CS idle
+    const idleTime = period * 0.5
+    cs.push({ t: 0, v: 1 })
+    sclk.push({ t: 0, v: idleLevel })
+    mosi.push({ t: 0, v: 0 })
+    miso.push({ t: 0, v: 0 })
+
+    // CS goes low (active)
+    cs.push({ t: idleTime, v: 0 })
+    sclk.push({ t: idleTime, v: idleLevel })
+    annotations.push({ t: idleTime, label: 'CS↓' })
+
+    let t = idleTime
+    const dataBits = dataByte.toString(2).padStart(8, '0')
+
+    // MISO responds with complement for demo
+    const misoBits = (255 - dataByte).toString(2).padStart(8, '0')
+
+    for (let i = 0; i < 8; i++) {
+      const bit = parseInt(dataBits[i])
+      const misoBit = parseInt(misoBits[i])
+
+      // Half period low (or high if CPOL=1)
+      const half1Start = t
+      const half1End = t + period / 2
+      const half2Start = half1End
+      const half2End = t + period
+
+      // Data changes on first edge (CPHA=0: first edge = clock idle→active, CPHA=1: first edge = active→idle)
+      if (cpha === 0) {
+        // Data set at start of cycle (before active edge)
+        mosi.push({ t: half1Start, v: bit })
+        miso.push({ t: half1Start, v: misoBit })
+        // SCLK: idle → active at half1End
+        sclk.push({ t: half1Start, v: idleLevel })
+        sclk.push({ t: half1End, v: activeLevel })
+        // Sample at active edge
+        annotations.push({ t: half2Start, label: `D${7 - i}=${bit}` })
+        // SCLK: active → idle at half2End
+        sclk.push({ t: half2End, v: idleLevel })
+      } else {
+        // CPHA=1: first edge (idle→active) changes data, second edge (active→idle) samples
+        sclk.push({ t: half1Start, v: idleLevel })
+        sclk.push({ t: half1End, v: activeLevel })
+        // Data changes at active edge
+        mosi.push({ t: half2Start, v: bit })
+        miso.push({ t: half2Start, v: misoBit })
+        annotations.push({ t: half2Start, label: `D${7 - i}=${bit}` })
+        // Sample at falling edge (active→idle)
+        sclk.push({ t: half2End, v: idleLevel })
+      }
+
+      t = half2End
+    }
+
+    // CS goes high (idle)
+    cs.push({ t: t, v: 1 })
+    sclk.push({ t: t, v: idleLevel })
+    mosi.push({ t: t, v: 0 })
+    miso.push({ t: t, v: 0 })
+    annotations.push({ t: t, label: 'CS↑' })
+
+    // Post-CS idle
+    t += period * 0.5
+    cs.push({ t, v: 1 })
+    sclk.push({ t, v: idleLevel })
+
+    return { cs, sclk, mosi, miso, annotations }
+  }
+
+  /**
+   * 模拟SPI模式不匹配导致的数据错位
+   */
+  _corruptByte(original, mode) {
+    // Different corruption patterns per mode mismatch
+    if (mode === 1) {
+      // CPHA wrong: bits shifted by 1
+      return ((original << 1) | (original >> 7)) & 0xFF
+    } else if (mode === 2) {
+      // CPOL wrong: bits inverted
+      return (~original) & 0xFF
+    } else if (mode === 3) {
+      // Both wrong: shifted + inverted
+      const shifted = ((original << 1) | (original >> 7)) & 0xFF
+      return (~shifted) & 0xFF
+    }
+    return original
   }
 }

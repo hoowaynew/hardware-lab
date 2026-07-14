@@ -257,6 +257,72 @@
           </span>
         </div>
       </div>
+
+      <!-- PCB走线阻抗实验布局 -->
+      <div v-else-if="currentExpId === 'pcb-trace-impedance'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <PCBTraceView
+          :simResult="store.simResult?.results?.PCB1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- WiFi信号衰减实验布局 -->
+      <div v-else-if="currentExpId === 'wifi-signal-attenuation'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <WifiSignalView
+          :simResult="store.simResult?.results?.WIFI1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 逻辑分析仪调试实验布局 -->
+      <div v-else-if="currentExpId === 'logic-analyzer-debug'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <LogicAnalyzerView
+          :simResult="store.simResult?.results?.LA1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 错误弹窗 -->
@@ -292,6 +358,9 @@ import TransistorSwitchView from './components/TransistorSwitchView.vue'
 import RCFilterView from './components/RCFilterView.vue'
 import I2CView from './components/I2CView.vue'
 import NTCThermistorView from './components/NTCThermistorView.vue'
+import PCBTraceView from './components/PCBTraceView.vue'
+import WifiSignalView from './components/WifiSignalView.vue'
+import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
 
 import ledConfig from './experiments/led-resistor.json'
 import gpioConfig from './experiments/gpio-modes.json'
@@ -302,6 +371,9 @@ import transistorConfig from './experiments/transistor-switch.json'
 import rcFilterConfig from './experiments/rc-filter.json'
 import i2cConfig from './experiments/i2c-signal.json'
 import ntcConfig from './experiments/ntc-thermistor.json'
+import pcbConfig from './experiments/pcb-trace-impedance.json'
+import wifiConfig from './experiments/wifi-signal-attenuation.json'
+import laConfig from './experiments/logic-analyzer-debug.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -315,7 +387,10 @@ const allExperiments = [
   { id: 'transistor-switch', icon: '🔘', shortTitle: '三极管开关', desc: '小电流控制大电流', config: transistorConfig },
   { id: 'rc-filter', icon: '〰️', shortTitle: 'RC低通滤波', desc: 'fc=1/(2πRC)', config: rcFilterConfig },
   { id: 'i2c-signal', icon: '🔗', shortTitle: 'I2C时序', desc: 'SDA/SCL协议解析', config: i2cConfig },
-  { id: 'ntc-thermistor', icon: '🌡️', shortTitle: 'NTC测温', desc: '温度→阻值→ADC', config: ntcConfig }
+  { id: 'ntc-thermistor', icon: '🌡️', shortTitle: 'NTC测温', desc: '温度→阻值→ADC', config: ntcConfig },
+  { id: 'pcb-trace-impedance', icon: '🎨', shortTitle: 'PCB走线阻抗', desc: '50Ω阻抗匹配', config: pcbConfig },
+  { id: 'wifi-signal-attenuation', icon: '📶', shortTitle: 'WiFi信号衰减', desc: '链路预算计算', config: wifiConfig },
+  { id: 'logic-analyzer-debug', icon: '🐛', shortTitle: 'SPI调试', desc: '逻辑分析仪解码', config: laConfig }
 ]
 
 const categories = [
@@ -327,10 +402,9 @@ const categories = [
   { id: 'signal', icon: '〰️', name: '信号处理', available: true, experiments: allExperiments.filter(e => e.config.category === 'signal') },
   { id: 'comm', icon: '🔗', name: '通信协议', available: true, experiments: allExperiments.filter(e => e.config.category === 'comm') },
   { id: 'sensor', icon: '📡', name: '传感器接口', available: true, experiments: allExperiments.filter(e => e.config.category === 'sensor') },
-  { id: 'pcb', icon: '🎨', name: 'PCB设计', available: false, experiments: [] },
-  { id: 'signal', icon: '〰️', name: '信号处理', available: false, experiments: [] },
-  { id: 'wireless', icon: '📶', name: '无线技术', available: false, experiments: [] },
-  { id: 'debug', icon: '🐛', name: '调试技巧', available: false, experiments: [] }
+  { id: 'pcb', icon: '🎨', name: 'PCB设计', available: true, experiments: allExperiments.filter(e => e.config.category === 'pcb') },
+  { id: 'wireless', icon: '📡', name: '无线技术', available: true, experiments: allExperiments.filter(e => e.config.category === 'wireless') },
+  { id: 'debug', icon: '🐛', name: '调试技巧', available: true, experiments: allExperiments.filter(e => e.config.category === 'debug') }
 ]
 
 const currentExpId = ref(null)
@@ -436,7 +510,8 @@ const categoryLabel = computed(() => {
   const map = {
     power: '⚡ 电源', stm32: '📋 STM32', timing: '⏱️ 定时',
     analog: '📊 模拟', circuit: '🔌 电路',
-    signal: '〰️ 信号', comm: '🔗 通信', sensor: '📡 传感器'
+    signal: '〰️ 信号', comm: '🔗 通信', sensor: '📡 传感器',
+    pcb: '🎨 PCB', wireless: '📡 无线', debug: '🐛 调试'
   }
   return map[store.currentExperiment?.category] || ''
 })
@@ -511,6 +586,21 @@ const statusText = computed(() => {
     const ntc = results.NTC1
     if (ntc?.error) return `⚠️ ${ntc.errorTitle || 'ADC异常'}`
     return `✅ ${ntc?.tempC}°C | R=${ntc?.RntcK} | ADC=${ntc?.adcValue}/${ntc?.adcMax} (${ntc?.adcPercent}%)`
+  }
+  if (currentExpId.value === 'pcb-trace-impedance') {
+    const pcb = results.PCB1
+    if (pcb?.error) return `⚠️ ${pcb.errorTitle || '阻抗失配'}`
+    return `✅ Z₀=${pcb?.impedance}Ω | 偏差${pcb?.deviation}Ω | εeff=${pcb?.effectiveEr}`
+  }
+  if (currentExpId.value === 'wifi-signal-attenuation') {
+    const wifi = results.WIFI1
+    if (wifi?.error) return `⚠️ ${wifi.errorTitle || '信号异常'}`
+    return `✅ RSSI=${wifi?.rssi}dBm | 余量+${wifi?.margin}dB | ${wifi?.band}`
+  }
+  if (currentExpId.value === 'logic-analyzer-debug') {
+    const la = results.LA1
+    if (la?.error) return `⚠️ ${la.errorTitle || 'SPI错误'}`
+    return `✅ ${la?.modeName} | TX=${la?.dataHex} → RX=${la?.decodedHex} | ${la?.clockFreq}kHz`
   }
   return '✅ 实验运行中'
 })

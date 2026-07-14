@@ -117,7 +117,13 @@ const componentSizes = {
   pwm: { w: 50, h: 50 },
   probe: { w: 30, h: 30 },
   'capacitor-charge': { w: 50, h: 50 },
-  'transistor-switch': { w: 50, h: 50 }
+  'transistor-switch': { w: 50, h: 50 },
+  'rc-filter': { w: 50, h: 50 },
+  'i2c-bus': { w: 50, h: 50 },
+  'ntc-sensor': { w: 50, h: 50 },
+  'pcb-trace': { w: 50, h: 50 },
+  'wifi-link': { w: 50, h: 50 },
+  'logic-analyzer': { w: 50, h: 50 }
 }
 
 const renderedComponents = computed(() => {
