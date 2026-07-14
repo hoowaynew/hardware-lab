@@ -16,7 +16,7 @@
           </button>
         </div>
       </div>
-      <p class="app-subtitle">交互式硬件原理实验平台 · 18个实验 · 11大分类</p>
+      <p class="app-subtitle">交互式硬件原理实验平台 · 21个实验 · 11大分类</p>
 
       <!-- 搜索栏 -->
       <div class="search-bar">
@@ -648,6 +648,72 @@
           </span>
         </div>
       </div>
+
+      <!-- UART串口实验布局 -->
+      <div v-else-if="currentExpId === 'uart-signal'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <UARTView
+          :simResult="store.simResult?.results?.UART1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 光敏电阻测光实验布局 -->
+      <div v-else-if="currentExpId === 'photoresistor'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <PhotoresistorView
+          :simResult="store.simResult?.results?.PH1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- LC带通滤波器实验布局 -->
+      <div v-else-if="currentExpId === 'lc-bandpass'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <LCBandpassView
+          :simResult="store.simResult?.results?.LC1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -737,6 +803,9 @@ import ButtonDebounceView from './components/ButtonDebounceView.vue'
 import LDORegulatorView from './components/LDORegulatorView.vue'
 import Timer555View from './components/Timer555View.vue'
 import ESDProtectionView from './components/ESDProtectionView.vue'
+import UARTView from './components/UARTView.vue'
+import PhotoresistorView from './components/PhotoresistorView.vue'
+import LCBandpassView from './components/LCBandpassView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -768,6 +837,9 @@ import debounceConfig from './experiments/button-debounce.json'
 import ldoConfig from './experiments/ldo-regulator.json'
 import timerConfig from './experiments/timer-555.json'
 import esdConfig from './experiments/esd-protection.json'
+import uartConfig from './experiments/uart-signal.json'
+import photoConfig from './experiments/photoresistor.json'
+import lcBandpassConfig from './experiments/lc-bandpass.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -793,7 +865,10 @@ const allExperiments = [
   { id: 'button-debounce', icon: '⏱️', shortTitle: '按键消抖', desc: '硬件vs软件消抖', config: debounceConfig, difficulty: 'beginner' },
   { id: 'ldo-regulator', icon: '🔌', shortTitle: 'LDO稳压器', desc: '5V→3.3V热设计', config: ldoConfig, difficulty: 'intermediate' },
   { id: 'timer-555', icon: '⏰', shortTitle: '555定时器', desc: '无稳态振荡器', config: timerConfig, difficulty: 'intermediate' },
-  { id: 'esd-protection', icon: '⚡', shortTitle: 'ESD保护', desc: 'TVS二极管钳位', config: esdConfig, difficulty: 'beginner' }
+  { id: 'esd-protection', icon: '⚡', shortTitle: 'ESD保护', desc: 'TVS二极管钳位', config: esdConfig, difficulty: 'beginner' },
+  { id: 'uart-signal', icon: '🔗', shortTitle: 'UART串口', desc: '异步通信时序', config: uartConfig, difficulty: 'intermediate' },
+  { id: 'photoresistor', icon: '💡', shortTitle: '光敏电阻测光', desc: '光照→阻值→ADC', config: photoConfig, difficulty: 'beginner' },
+  { id: 'lc-bandpass', icon: '〰️', shortTitle: 'LC带通滤波', desc: 'f₀=1/(2π√LC)', config: lcBandpassConfig, difficulty: 'advanced' }
 ]
 
 const categories = [
@@ -1313,6 +1388,21 @@ const statusText = computed(() => {
     const esd = results.ESD1
     if (esd?.error) return `⚠️ ${esd.errorTitle || 'ESD异常'}`
     return `✅ 钳位${(esd?.clampV || 0).toFixed(1)}V | 比值${(esd?.clampingRatio || 0).toFixed(1)}× | Ipeak=${(esd?.peakCurrent || 0).toFixed(0)}A`
+  }
+  if (currentExpId.value === 'uart-signal') {
+    const uart = results.UART1
+    if (uart?.error) return `⚠️ ${uart.errorTitle || 'UART异常'}`
+    return `${uart?.baudMismatch ? '⚠️ 乱码' : '✅ 解码正确'} | ${uart?.dataHex || '0x55'} @ ${uart?.baudrate || 9600}bps`
+  }
+  if (currentExpId.value === 'photoresistor') {
+    const ph = results.PH1
+    if (ph?.error) return `⚠️ ${ph.errorTitle || '光敏异常'}`
+    return `✅ ${ph?.luxLevel || 100}lux | R=${ph?.rphotoK || '—'} | ADC=${ph?.adcValue || 0}/${ph?.adcMax || 4095}`
+  }
+  if (currentExpId.value === 'lc-bandpass') {
+    const lc = results.LC1
+    if (lc?.error) return `⚠️ ${lc.errorTitle || 'LC异常'}`
+    return `✅ f₀=${lc?.f0Display || '—'}Hz | Q=${(lc?.q || 0).toFixed(1)} | 增益=${((lc?.gain || 0) * 100).toFixed(1)}%`
   }
   return '✅ 实验运行中'
 })

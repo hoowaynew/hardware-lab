@@ -1,0 +1,79 @@
+{
+  "id": "photoresistor",
+  "topic_id": "sensor-002",
+  "title": "光敏电阻测光：光照→阻值→ADC",
+  "category": "sensor",
+  "difficulty": "beginner",
+  "description": "调节光照强度，看光敏电阻如何从几十kΩ降到几百Ω。分压选错了ADC就看不到变化！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "photoresistor-sensor",
+        "id": "PH1",
+        "x": 200,
+        "y": 140,
+        "label": "光敏测光电路",
+        "defaultDarkR": 1000000,
+        "defaultLightR": 500,
+        "defaultPullup": 10000,
+        "defaultVcc": 3.3,
+        "defaultAdcBits": 12
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "luxLevel",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "unit": "lux",
+      "default": 100,
+      "label": "光照强度"
+    },
+    {
+      "type": "slider",
+      "property": "photoPullup",
+      "min": 1000,
+      "max": 100000,
+      "step": 1000,
+      "default": 10000,
+      "unit": "Ω",
+      "label": "上拉电阻 Rpullup"
+    },
+    {
+      "type": "slider",
+      "property": "photoDarkR",
+      "min": 100000,
+      "max": 10000000,
+      "step": 100000,
+      "default": 1000000,
+      "unit": "Ω",
+      "label": "暗电阻 Rdark"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "adcValue >= adcMax * 0.95",
+      "type": "PHOTO_ADC_SATURATION",
+      "title": "ADC饱和！强光下读数拉满 ⚠️",
+      "explanation": "ADC读数 {adcValue} 接近满量程 {adcMax}。\n强光时光敏阻值极小，分压输出接近Vcc。\n减小上拉电阻或增大暗电阻范围。",
+      "article_ref": "sensor-002"
+    },
+    {
+      "condition": "adcValue <= adcMax * 0.05",
+      "type": "PHOTO_ADC_LOW",
+      "title": "ADC读数太低！暗光无法区分 ⚠️",
+      "explanation": "ADC读数 {adcValue} 太小。\n暗光时光敏阻值接近暗电阻，如果上拉太小分压输出接近0V。\n增大上拉电阻使暗光时分压在量程中段。",
+      "article_ref": "sensor-002"
+    }
+  ],
+  "targets": {
+    "perfect": "ADC读数在量程15%~85%范围内，光照变化时ADC明显响应",
+    "hint": "光敏电阻: R(lux) = Rdark × (lux_ref/lux)^γ，γ≈0.5~0.8"
+  }
+}

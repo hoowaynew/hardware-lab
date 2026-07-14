@@ -237,6 +237,9 @@ export class Simulator {
       'ldo-regulator': () => this._simulateLDO(comp),
       'timer-555': () => this._simulateTimer555(comp),
       'esd-protection': () => this._simulateESD(comp),
+      'uart-bus': () => this._simulateUART(comp),
+      'photoresistor-sensor': () => this._simulatePhotoresistor(comp),
+      'lc-bandpass': () => this._simulateLCBandpass(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -1554,6 +1557,249 @@ export class Simulator {
       result.error = 'ESD_VC_TOO_HIGH'
       result.errorTitle = '钳位电压过高 ⚠️'
       result.errorExplanation = `钳位电压/工作电压 = ${clampingRatio.toFixed(1)}，超过3倍。\nVc=${vc.toFixed(1)}V >> Vwm=${vwm.toFixed(1)}V，芯片承受过压。\n选择Vc更低（更接近Vwm）的TVS器件。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真UART串口通信
+   * 帧格式: IDLE(高) → START(低) → D0~D7 → [校验] → STOP(高)
+   */
+  _simulateUART(comp) {
+    const data = this.context.uartData ?? comp.defaultData ?? 0x55
+    const baudrate = this.context.uartBaudrate || comp.defaultBaudrate || 9600
+    const parity = this.context.uartParity || comp.defaultParity || 'none'
+    const baudMismatch = this.context.uartRxMismatch || false
+
+    const dataBits = data.toString(2).padStart(8, '0')
+    const dataHex = '0x' + data.toString(16).toUpperCase().padStart(2, '0')
+
+    // Calculate parity bit
+    const onesCount = dataBits.split('').filter(b => b === '1').length
+    let parityBit = null
+    if (parity === 'even') {
+      parityBit = onesCount % 2 === 0 ? 0 : 1
+    } else if (parity === 'odd') {
+      parityBit = onesCount % 2 === 0 ? 1 : 0
+    }
+
+    // Generate TX waveform
+    const txWave = []
+    const annotations = []
+    let t = 0
+    const bitTime = 4 // time units per bit
+
+    // Idle (high) - 1 bit time
+    txWave.push({ t, v: 1 })
+    t += bitTime
+
+    // START bit (low)
+    txWave.push({ t, v: 0 })
+    annotations.push({ t: t + bitTime / 2, label: 'START' })
+    t += bitTime
+
+    // Data bits D0~D7 (LSB first)
+    for (let i = 0; i < 8; i++) {
+      const bit = parseInt(dataBits[7 - i]) // LSB first: D0 is rightmost bit
+      txWave.push({ t, v: bit })
+      annotations.push({ t: t + bitTime / 2, label: `D${i}` })
+      t += bitTime
+    }
+
+    // Parity bit (if enabled)
+    if (parityBit !== null) {
+      txWave.push({ t, v: parityBit })
+      annotations.push({ t: t + bitTime / 2, label: parity.toUpperCase().slice(0, 3) })
+      t += bitTime
+    }
+
+    // STOP bit (high)
+    txWave.push({ t, v: 1 })
+    annotations.push({ t: t + bitTime / 2, label: 'STOP' })
+    t += bitTime
+
+    // Trailing idle
+    txWave.push({ t, v: 1 })
+    t += bitTime
+
+    // If baud mismatch, generate garbled received data
+    let rxGarbage = ''
+    if (baudMismatch) {
+      // Simulate 2x baud rate mismatch - sample at wrong times
+      const rxBaud = baudrate * 2
+      const sampleStep = bitTime / 2 // sample twice as fast
+      let garbageVal = 0
+      for (let i = 0; i < 8; i++) {
+        // Sample at wrong times, produce garbage
+        const sampleT = bitTime + (i * 2 + 1) * sampleStep
+        const wavePoint = txWave.find(w => w.t >= sampleT)
+        if (wavePoint && Math.random() > 0.3) {
+          garbageVal |= (wavePoint.v ? 1 : 0) << i
+        }
+      }
+      rxGarbage = '0x' + garbageVal.toString(16).toUpperCase().padStart(2, '0')
+    }
+
+    const result = {
+      data, dataHex, dataBits,
+      baudrate, parity, parityBit,
+      baudMismatch, rxGarbage,
+      txWave, annotations,
+      loadState: 'running'
+    }
+
+    // Baud rate mismatch error
+    if (baudMismatch) {
+      result.error = 'UART_BAUD_MISMATCH'
+      result.errorTitle = '波特率不匹配！收到乱码 ⚠️'
+      result.errorExplanation = `发送端 ${baudrate} bps，接收端按 ${baudrate * 2} bps 解码。\n每位采样时间错位，数据完全错乱。\nUART没有时钟线，收发双方必须约定相同波特率。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真光敏电阻测光
+   * R(lux) = Rdark × (lux_ref / lux)^γ
+   */
+  _simulatePhotoresistor(comp) {
+    const lux = this.context.luxLevel ?? 100
+    const Rdark = this.context.photoDarkR || comp.defaultDarkR || 1000000
+    const Rpullup = this.context.photoPullup || comp.defaultPullup || 10000
+    const Vcc = comp.defaultVcc || 3.3
+    const adcBits = comp.defaultAdcBits || 12
+    const gamma = 0.7 // typical photoresistor gamma
+    const luxRef = 10 // reference lux
+
+    // Photoresistor resistance using power law
+    const Rphoto = Rdark * Math.pow(luxRef / lux, gamma)
+
+    // Voltage divider (photoresistor to GND, pullup to Vcc)
+    const Vout = Vcc * Rphoto / (Rpullup + Rphoto)
+
+    // ADC value
+    const adcMax = Math.pow(2, adcBits) - 1
+    const adcValue = Math.round(Vout / Vcc * adcMax)
+
+    // Dynamic range: ADC at lux=1 vs lux=1000
+    const Rdark1 = Rdark * Math.pow(luxRef / 1, gamma)
+    const Vout1 = Vcc * Rdark1 / (Rpullup + Rdark1)
+    const adc1 = Math.round(Vout1 / Vcc * adcMax)
+    const Rlight = Rdark * Math.pow(luxRef / 1000, gamma)
+    const VoutL = Vcc * Rlight / (Rpullup + Rlight)
+    const adcL = Math.round(VoutL / Vcc * adcMax)
+    const dynamicRange = Math.abs(adc1 - adcL)
+
+    const result = {
+      luxLevel: lux,
+      Rdark,
+      Rpullup,
+      Rphoto,
+      rphotoK: Rphoto >= 1000 ? (Rphoto / 1000).toFixed(2) + 'kΩ' : Rphoto.toFixed(0) + 'Ω',
+      Vcc,
+      Vout,
+      adcBits,
+      adcMax,
+      adcValue,
+      adcPercent: (adcValue / adcMax * 100).toFixed(1),
+      dynamicRange,
+      loadState: 'running'
+    }
+
+    // ADC saturation warning
+    if (adcValue >= adcMax * 0.95) {
+      result.error = 'PHOTO_ADC_SATURATION'
+      result.errorTitle = 'ADC饱和！强光下读数拉满 ⚠️'
+      result.errorExplanation = `ADC读数 ${adcValue} 接近满量程 ${adcMax}。\n强光时光敏阻值极小，分压输出接近Vcc。\n减小上拉电阻或增大暗电阻范围。`
+    }
+
+    // ADC too low
+    if (adcValue <= adcMax * 0.05) {
+      result.error = 'PHOTO_ADC_LOW'
+      result.errorTitle = 'ADC读数太低！暗光无法区分 ⚠️'
+      result.errorExplanation = `ADC读数 ${adcValue} 太小。\n暗光时光敏阻值接近暗电阻，如果上拉太小分压输出接近0V。\n增大上拉电阻使暗光时分压在量程中段。`
+    }
+
+    return result
+  }
+
+  /**
+   * 仿真LC带通滤波器
+   * f0 = 1/(2π√LC), Q = ω0L/R, BW = f0/Q
+   * 增益: |H(jω)| = 1/√(1 + Q²(f/f0 - f0/f)²)
+   */
+  _simulateLCBandpass(comp) {
+    const L = (this.context.lcInductance || comp.defaultL || 100) / 1e6 // μH → H
+    const C = (this.context.lcCapacitance || comp.defaultC || 100) / 1e9 // nF → F
+    const R = this.context.lcResistance || comp.defaultR || 50 // Ω
+    const inputFreq = this.context.lcFrequency || comp.defaultFreq || 1000
+
+    // Resonant frequency
+    const f0 = 1 / (2 * Math.PI * Math.sqrt(L * C))
+    const omega0 = 2 * Math.PI * f0
+
+    // Q factor
+    const q = omega0 * L / R
+
+    // Bandwidth
+    const bw = q > 0 ? f0 / q : 0
+
+    // Gain at input frequency
+    const ratio = inputFreq / f0
+    const denominator = Math.sqrt(1 + q * q * Math.pow(ratio - 1 / ratio, 2))
+    const gain = 1 / denominator
+
+    const attenuationDB = 20 * Math.log10(Math.max(0.0001, gain))
+
+    // Generate frequency response curve (log scale)
+    const responseCurve = []
+    const fMin = 100
+    const fMax = 200000
+    const numPoints = 60
+    for (let i = 0; i <= numPoints; i++) {
+      const f = fMin * Math.pow(fMax / fMin, i / numPoints)
+      const r = f / f0
+      const denom = Math.sqrt(1 + q * q * Math.pow(r - 1 / r, 2))
+      const g = 1 / denom
+      responseCurve.push({ f, gain: g })
+    }
+
+    // Generate input + output waveforms (sine, 2 cycles)
+    const points = 120
+    const inputCurve = []
+    const outputCurve = []
+    const period = 1 / inputFreq
+    const totalTime = period * 2
+
+    for (let i = 0; i <= points; i++) {
+      const t = (i / points) * totalTime
+      const inputV = 0.5 + 0.5 * Math.sin(2 * Math.PI * inputFreq * t)
+      const outputV = 0.5 + 0.5 * gain * Math.sin(2 * Math.PI * inputFreq * t)
+      inputCurve.push({ t: t * 1000, v: inputV })
+      outputCurve.push({ t: t * 1000, v: outputV })
+    }
+
+    const f0Display = f0 < 1 ? f0.toFixed(2) : f0 < 1000 ? f0.toFixed(0) : f0 < 1000000 ? (f0 / 1000).toFixed(1) + 'k' : (f0 / 1000000).toFixed(1) + 'M'
+
+    const result = {
+      L: L * 1e6, // back to μH for display
+      C: C * 1e9, // back to nF for display
+      R,
+      inputFreq,
+      f0, f0Display,
+      q, bw,
+      gain, attenuationDB,
+      responseCurve,
+      inputCurve, outputCurve,
+      loadState: 'running'
+    }
+
+    // Off-resonance error
+    if (f0 > 0 && Math.abs(inputFreq - f0) / f0 > 0.5 && gain < 0.1) {
+      result.error = 'LC_OFF_RESONANCE'
+      result.errorTitle = '严重失谐！信号几乎完全被抑制 ⚠️'
+      result.errorExplanation = `输入频率 ${inputFreq}Hz 偏离中心频率 ${f0Display}Hz 超过50%。\nLC带通只通过f0附近±BW/2的频率。\n调L或C使f0匹配信号频率。`
     }
 
     return result

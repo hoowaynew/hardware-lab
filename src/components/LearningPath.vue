@@ -98,7 +98,10 @@ const pathSteps = [
   { id: 'i2c-signal', icon: '🔗', title: 'I2C通信时序', phase: '通信', desc: 'SDA/SCL协议，START/STOP/ACK握手', prerequisite: 'gpio-modes' },
   { id: 'logic-analyzer-debug', icon: '🐛', title: 'SPI逻辑分析仪', phase: '调试', desc: 'CPOL/CPHA四种模式，逻辑分析仪解码SPI', prerequisite: 'i2c-signal' },
   { id: 'pcb-trace-impedance', icon: '🎨', title: 'PCB走线阻抗', phase: '设计', desc: '50Ω阻抗匹配，微带线计算与信号完整性', prerequisite: 'rc-filter' },
-  { id: 'wifi-signal-attenuation', icon: '📡', title: 'WiFi信号衰减', phase: '无线', desc: '链路预算、RSSI、自由空间路径损耗', prerequisite: 'pcb-trace-impedance' }
+  { id: 'wifi-signal-attenuation', icon: '📡', title: 'WiFi信号衰减', phase: '无线', desc: '链路预算、RSSI、自由空间路径损耗', prerequisite: 'pcb-trace-impedance' },
+  { id: 'photoresistor', icon: '💡', title: '光敏电阻测光', phase: '入门', desc: '光照→阻值→ADC，光传感器信号采集', prerequisite: 'ntc-thermistor' },
+  { id: 'uart-signal', icon: '🔗', title: 'UART串口通信', phase: '通信', desc: '异步串口时序，波特率与帧格式', prerequisite: 'i2c-signal' },
+  { id: 'lc-bandpass', icon: '〰️', title: 'LC带通滤波器', phase: '进阶', desc: '谐振频率f₀=1/(2π√LC)，Q值与带宽', prerequisite: 'rc-filter' }
 ]
 
 const completedInPath = computed(() => {

@@ -1,0 +1,73 @@
+{
+  "id": "uart-signal",
+  "topic_id": "comm-002",
+  "title": "UART串口通信：异步时序与波特率",
+  "category": "comm",
+  "difficulty": "intermediate",
+  "description": "发送一个字节，观察TX引脚的高低电平如何编码数据。波特率不匹配就全是乱码！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "uart-bus",
+        "id": "UART1",
+        "x": 200,
+        "y": 140,
+        "label": "UART发送器",
+        "defaultBaudrate": 9600,
+        "defaultDataBits": 8,
+        "defaultParity": "none",
+        "defaultStopBits": 1,
+        "defaultData": 85
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "uartData",
+      "min": 0,
+      "max": 255,
+      "step": 1,
+      "default": 85,
+      "unit": "(0x55)",
+      "label": "发送数据 (8-bit)"
+    },
+    {
+      "type": "toggle",
+      "property": "uartBaudrate",
+      "values": [9600, 19200, 38400, 57600, 115200],
+      "labels": ["9600", "19200", "38400", "57600", "115200"],
+      "label": "波特率 (bps)"
+    },
+    {
+      "type": "toggle",
+      "property": "uartRxMismatch",
+      "values": [false, true],
+      "labels": ["收发一致", "接收端波特率×2"],
+      "label": "波特率匹配"
+    },
+    {
+      "type": "toggle",
+      "property": "uartParity",
+      "values": ["none", "even", "odd"],
+      "labels": ["无校验", "偶校验", "奇校验"],
+      "label": "校验位"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "baudMismatch",
+      "type": "UART_BAUD_MISMATCH",
+      "title": "波特率不匹配！收到乱码 ⚠️",
+      "explanation": "发送端 {txBaud} bps，接收端按 {rxBaud} bps 解码。\n每位采样时间错位，数据完全错乱。\nUART没有时钟线，收发双方必须约定相同波特率。",
+      "article_ref": "comm-002"
+    }
+  ],
+  "targets": {
+    "perfect": "正确发送数据0x55，波特率匹配，波形可解码",
+    "hint": "UART帧格式：空闲高→START(低)→D0~D7→校验(可选)→STOP(高)"
+  }
+}

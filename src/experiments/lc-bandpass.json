@@ -1,0 +1,82 @@
+{
+  "id": "lc-bandpass",
+  "topic_id": "signal-002",
+  "title": "LC带通滤波器：中心频率与带宽",
+  "category": "signal",
+  "difficulty": "advanced",
+  "description": "调节L和C，看LC谐振电路如何只让特定频率通过。Q值太高带宽窄，太低选频性差！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "lc-bandpass",
+        "id": "LC1",
+        "x": 200,
+        "y": 140,
+        "label": "LC带通滤波器",
+        "defaultL": 100,
+        "defaultC": 100,
+        "defaultR": 50,
+        "defaultFreq": 1000,
+        "defaultInputType": "sine"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "lcInductance",
+      "min": 10,
+      "max": 1000,
+      "step": 10,
+      "default": 100,
+      "unit": "μH",
+      "label": "电感 L"
+    },
+    {
+      "type": "slider",
+      "property": "lcCapacitance",
+      "min": 10,
+      "max": 1000,
+      "step": 10,
+      "default": 100,
+      "unit": "nF",
+      "label": "电容 C"
+    },
+    {
+      "type": "slider",
+      "property": "lcResistance",
+      "min": 1,
+      "max": 200,
+      "step": 1,
+      "default": 50,
+      "unit": "Ω",
+      "label": "线圈电阻 R (Q值控制)"
+    },
+    {
+      "type": "slider",
+      "property": "lcFrequency",
+      "min": 100,
+      "max": 200000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Hz",
+      "label": "输入信号频率"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "Math.abs(inputFreq - f0) / f0 > 0.5 && gain < 0.1",
+      "type": "LC_OFF_RESONANCE",
+      "title": "严重失谐！信号几乎完全被抑制 ⚠️",
+      "explanation": "输入频率 {inputFreq}Hz 偏离中心频率 {f0Display}Hz 超过50%。\nLC带通只通过f0附近±BW/2的频率。\n调L或C使f0匹配信号频率。",
+      "article_ref": "signal-002"
+    }
+  ],
+  "targets": {
+    "perfect": "输入频率等于f0，增益接近1，Q值适中(10~50)",
+    "hint": "f0 = 1/(2π√LC)，Q = ω0L/R，BW = f0/Q"
+  }
+}

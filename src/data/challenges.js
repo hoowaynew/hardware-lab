@@ -250,5 +250,61 @@ export const challengeData = {
         detail: `Vwm=${vwm.toFixed(1)}V, 钳位比=${ratio.toFixed(1)}×, 芯片=${chipOk ? '安全' : '损坏'}`
       }
     }
+  },
+
+  'uart-signal': {
+    title: '挑战：正确发送0xA5并解码',
+    goal: '波特率匹配，发送0xA5，接收端正确解码',
+    constraint: '不能开启波特率不匹配',
+    timeLimit: 45,
+    check: (result) => {
+      const uart = result?.results?.UART1
+      const baud = uart?.baudrate ?? 0
+      const mismatch = uart?.baudMismatch ?? true
+      const data = uart?.data ?? 0
+      return {
+        passed: !mismatch && data === 165 && baud === 9600,
+        score: Math.max(0, 100 - (mismatch ? 50 : 0) - (data === 165 ? 0 : 30)),
+        detail: `数据=0x${data.toString(16)}, 波特率=${baud}, ${mismatch ? '不匹配' : '匹配'}`
+      }
+    }
+  },
+
+  'photoresistor': {
+    title: '挑战：让ADC在100lux时读数40%~60%',
+    goal: '100lux光照下ADC读数在量程40%~60%',
+    constraint: 'ADC不能饱和(<95%)或过低(>5%)',
+    timeLimit: 60,
+    check: (result) => {
+      const ph = result?.results?.PH1
+      const adcPct = parseFloat(ph?.adcPercent) || 0
+      const hasError = ph?.error ? true : false
+      return {
+        passed: adcPct >= 40 && adcPct <= 60 && !hasError,
+        score: Math.max(0, 100 - Math.abs(adcPct - 50) * 2 - (hasError ? 30 : 0)),
+        detail: `100lux ADC=${adcPct.toFixed(1)}%${hasError ? ' (有警告)' : ''}`
+      }
+    }
+  },
+
+  'lc-bandpass': {
+    title: '挑战：设计50kHz带通滤波器',
+    goal: 'f₀≈50kHz(±5%)，Q值在10~50之间',
+    constraint: '输入频率等于f₀时增益>0.9',
+    timeLimit: 90,
+    check: (result) => {
+      const lc = result?.results?.LC1
+      const f0 = lc?.f0 ?? 0
+      const q = lc?.q ?? 0
+      const gain = lc?.gain ?? 0
+      const f0Ok = f0 > 47500 && f0 < 52500
+      const qOk = q >= 10 && q <= 50
+      const gainOk = gain > 0.9
+      return {
+        passed: f0Ok && qOk && gainOk,
+        score: Math.max(0, 100 - (f0Ok ? 0 : Math.abs(f0 - 50000) / 500) - (qOk ? 0 : 20) - (gainOk ? 0 : 20)),
+        detail: `f₀=${(f0/1000).toFixed(1)}kHz, Q=${q.toFixed(1)}, 增益=${gain.toFixed(3)}`
+      }
+    }
   }
 }

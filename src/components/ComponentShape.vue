@@ -230,6 +230,36 @@
       <text x="25" y="42" text-anchor="middle" fill="#888" font-size="6">SW+RC</text>
     </template>
 
+    <template v-else-if="type === 'uart-bus'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="12" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">UART</text>
+      <text x="25" y="24" text-anchor="middle" fill="#888" font-size="6">TX→RX</text>
+      <line x1="10" y1="32" x2="40" y2="32" :stroke="color" stroke-width="1.5"/>
+      <text x="25" y="44" text-anchor="middle" fill="#888" font-size="6">9600bps</text>
+    </template>
+
+    <template v-else-if="type === 'photoresistor-sensor'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="12" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">PHOTO</text>
+      <!-- 光敏电阻符号：圆圈+箭头 -->
+      <circle cx="25" cy="28" r="8" fill="none" :stroke="color" stroke-width="1.5"/>
+      <line x1="17" y1="36" x2="33" y2="20" :stroke="color" stroke-width="1.5"/>
+      <line x1="29" y1="16" x2="33" y2="20" :stroke="color" stroke-width="1"/>
+      <line x1="33" y1="16" x2="37" y2="20" :stroke="color" stroke-width="1"/>
+      <text x="25" y="44" text-anchor="middle" fill="#888" font-size="6">LDR</text>
+    </template>
+
+    <template v-else-if="type === 'lc-bandpass'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="12" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">LC BPF</text>
+      <!-- 电感+电容符号 -->
+      <path d="M 12 28 Q 16 22 20 28 Q 24 22 28 28 Q 32 22 36 28" fill="none" :stroke="color" stroke-width="1.5"/>
+      <line x1="20" y1="34" x2="20" y2="40" :stroke="color" stroke-width="1.5"/>
+      <line x1="30" y1="34" x2="30" y2="40" :stroke="color" stroke-width="1.5"/>
+      <line x1="16" y1="40" x2="34" y2="40" :stroke="color" stroke-width="1.5"/>
+      <text x="25" y="46" text-anchor="middle" fill="#888" font-size="5">L||C</text>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>
