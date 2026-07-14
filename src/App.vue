@@ -147,20 +147,46 @@
         </div>
       </div>
 
-      <!-- 11分类卡片网格 -->
-      <div v-else class="category-grid">
-        <div
-          v-for="cat in categories"
-          :key="cat.id"
-          class="category-card"
-          :class="{ 'cat-available': cat.available, 'cat-soon': !cat.available }"
-          @click="cat.available && selectCategory(cat)"
-        >
-          <span class="cat-icon">{{ cat.icon }}</span>
-          <span class="cat-name">{{ cat.name }}</span>
-          <span class="cat-count">{{ cat.available ? cat.experiments.length + '个实验' : '即将上线' }}</span>
-          <span v-if="categoryProgress(cat.id) > 0" class="cat-progress">{{ categoryProgress(cat.id) }}/{{ cat.experiments.length }} ✓</span>
-        </div>
+      <!-- 难度筛选标签 -->
+      <div v-if="!searchQuery" class="difficulty-filter">
+        <button
+          v-for="d in difficultyFilters"
+          :key="d.value"
+          class="diff-tab"
+          :class="{ active: selectedDifficulty === d.value }"
+          @click="selectedDifficulty = d.value"
+        >{{ d.label }}</button>
+      </div>
+
+      <!-- 分类卡片网格 / 难度筛选结果 -->
+      <div v-if="!searchQuery" class="category-grid">
+        <template v-if="selectedDifficulty === 'all'">
+          <div
+            v-for="cat in categories"
+            :key="cat.id"
+            class="category-card"
+            :class="{ 'cat-available': cat.available, 'cat-soon': !cat.available }"
+            @click="cat.available && selectCategory(cat)"
+          >
+            <span class="cat-icon">{{ cat.icon }}</span>
+            <span class="cat-name">{{ cat.name }}</span>
+            <span class="cat-count">{{ cat.available ? cat.experiments.length + '个实验' : '即将上线' }}</span>
+            <span v-if="categoryProgress(cat.id) > 0" class="cat-progress">{{ categoryProgress(cat.id) }}/{{ cat.experiments.length }} ✓</span>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            v-for="exp in experimentsByDifficulty"
+            :key="exp.id"
+            class="category-card exp-by-diff"
+            @click="loadExperiment(exp.id)"
+          >
+            <span class="cat-icon">{{ exp.icon }}</span>
+            <span class="cat-name">{{ exp.shortTitle }}</span>
+            <span class="cat-count">{{ exp.desc }}</span>
+            <span class="diff-badge" :class="exp.difficulty || 'beginner'">{{ difficultyShortMap[exp.difficulty || 'beginner'] }}</span>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -195,6 +221,12 @@
           <span class="meta-tag">{{ categoryLabel }}</span>
           <span class="meta-tag">{{ difficultyLabel }}</span>
           <button class="share-btn" @click="copyShareLink">🔗 分享</button>
+          <button
+            v-if="!isEmbed && hasChallenge"
+            class="share-btn challenge-toggle"
+            :class="{ active: showChallenge }"
+            @click="showChallenge = !showChallenge"
+          >🎯 挑战</button>
           <button
             v-if="!isEmbed"
             class="share-btn fav-toggle"
@@ -479,6 +511,72 @@
           </span>
         </div>
       </div>
+
+      <!-- DC-DC Buck降压实验布局 -->
+      <div v-else-if="currentExpId === 'dcdc-buck'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <DCDCBuckView
+          :simResult="store.simResult?.results?.BUCK1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 运放比较器实验布局 -->
+      <div v-else-if="currentExpId === 'opamp-comparator'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <OpAmpComparatorView
+          :simResult="store.simResult?.results?.OPAMP1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 按键消抖实验布局 -->
+      <div v-else-if="currentExpId === 'button-debounce'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <ButtonDebounceView
+          :simResult="store.simResult?.results?.BTN1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 错误弹窗 -->
@@ -499,6 +597,16 @@
 
     <!-- 首次访问引导 -->
     <Onboarding v-if="!isEmbed" />
+
+    <!-- 挑战模式面板 -->
+    <ChallengeMode
+      v-if="!isEmbed"
+      :visible="showChallenge"
+      :experimentId="currentExpId"
+      :simResult="store.simResult"
+      @close="showChallenge = false"
+      @complete="onChallengeComplete"
+    />
   </div>
 </template>
 
@@ -522,12 +630,17 @@ import NTCThermistorView from './components/NTCThermistorView.vue'
 import PCBTraceView from './components/PCBTraceView.vue'
 import WifiSignalView from './components/WifiSignalView.vue'
 import LogicAnalyzerView from './components/LogicAnalyzerView.vue'
+import DCDCBuckView from './components/DCDCBuckView.vue'
+import OpAmpComparatorView from './components/OpAmpComparatorView.vue'
+import ButtonDebounceView from './components/ButtonDebounceView.vue'
+import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
 import StatsDashboard from './components/StatsDashboard.vue'
 import Onboarding from './components/Onboarding.vue'
 import { knowledgeData } from './data/knowledge.js'
 import { hintsData } from './data/hints.js'
+import { challengeData } from './data/challenges.js'
 import { useFavoritesStore } from './stores/favorites.js'
 
 import ledConfig from './experiments/led-resistor.json'
@@ -542,6 +655,9 @@ import ntcConfig from './experiments/ntc-thermistor.json'
 import pcbConfig from './experiments/pcb-trace-impedance.json'
 import wifiConfig from './experiments/wifi-signal-attenuation.json'
 import laConfig from './experiments/logic-analyzer-debug.json'
+import dcdcConfig from './experiments/dcdc-buck.json'
+import opampConfig from './experiments/opamp-comparator.json'
+import debounceConfig from './experiments/button-debounce.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -561,7 +677,10 @@ const allExperiments = [
   { id: 'ntc-thermistor', icon: '🌡️', shortTitle: 'NTC测温', desc: '温度→阻值→ADC', config: ntcConfig },
   { id: 'pcb-trace-impedance', icon: '🎨', shortTitle: 'PCB走线阻抗', desc: '50Ω阻抗匹配', config: pcbConfig },
   { id: 'wifi-signal-attenuation', icon: '📶', shortTitle: 'WiFi信号衰减', desc: '链路预算计算', config: wifiConfig },
-  { id: 'logic-analyzer-debug', icon: '🐛', shortTitle: 'SPI调试', desc: '逻辑分析仪解码', config: laConfig }
+  { id: 'logic-analyzer-debug', icon: '🐛', shortTitle: 'SPI调试', desc: '逻辑分析仪解码', config: laConfig },
+  { id: 'dcdc-buck', icon: '⚡', shortTitle: 'DC-DC Buck', desc: '12V→5V降压转换', config: dcdcConfig, difficulty: 'intermediate' },
+  { id: 'opamp-comparator', icon: '📐', shortTitle: '运放比较器', desc: '阈值检测+迟滞', config: opampConfig, difficulty: 'intermediate' },
+  { id: 'button-debounce', icon: '⏱️', shortTitle: '按键消抖', desc: '硬件vs软件消抖', config: debounceConfig, difficulty: 'beginner' }
 ]
 
 const categories = [
@@ -582,9 +701,23 @@ const currentExpId = ref(null)
 const selectedCategory = ref(null)
 const showErrorPopup = ref(false)
 const showSuccessToast = ref(false)
+const showChallenge = ref(false)
 const successMessage = ref('')
 const isEmbed = ref(new URLSearchParams(window.location.search).has('embed'))
 const searchQuery = ref('')
+const selectedDifficulty = ref('all')
+const difficultyFilters = [
+  { value: 'all', label: '📋 全部' },
+  { value: 'beginner', label: '🟢 入门' },
+  { value: 'intermediate', label: '🟡 进阶' },
+  { value: 'advanced', label: '🔴 高级' }
+]
+const difficultyShortMap = { beginner: '入门', intermediate: '进阶', advanced: '高级' }
+
+const experimentsByDifficulty = computed(() => {
+  if (selectedDifficulty.value === 'all') return []
+  return allExperiments.filter(e => (e.difficulty || 'beginner') === selectedDifficulty.value)
+})
 const showSettings = ref(false)
 
 // 加载进度
@@ -686,6 +819,18 @@ const filteredExperiments = computed(() => {
 const currentKnowledge = computed(() => {
   return knowledgeData[currentExpId.value] || null
 })
+
+// 挑战模式
+const hasChallenge = computed(() => {
+  return !!challengeData[currentExpId.value]
+})
+
+function onChallengeComplete({ score, time, attempts }) {
+  progress.totalScore += Math.round(score)
+  successMessage.value = `🎉 挑战通关！得分 ${score.toFixed(0)}，用时 ${time}秒`
+  showSuccessToast.value = true
+  setTimeout(() => { showSuccessToast.value = false }, 3000)
+}
 
 // 分享链接
 function copyShareLink() {
@@ -1014,6 +1159,21 @@ const statusText = computed(() => {
     if (la?.error) return `⚠️ ${la.errorTitle || 'SPI错误'}`
     return `✅ ${la?.modeName} | TX=${la?.dataHex} → RX=${la?.decodedHex} | ${la?.clockFreq}kHz`
   }
+  if (currentExpId.value === 'dcdc-buck') {
+    const buck = results.BUCK1
+    if (buck?.error) return `⚠️ ${buck.errorTitle || 'Buck异常'}`
+    return `✅ Vout=${(buck?.vout || 0).toFixed(2)}V | 纹波${(buck?.ripple || 0).toFixed(0)}mV | η=${(buck?.efficiency || 0).toFixed(1)}%`
+  }
+  if (currentExpId.value === 'opamp-comparator') {
+    const oa = results.OPAMP1
+    if (oa?.error) return `⚠️ ${oa.errorTitle || '运放异常'}`
+    return `${oa?.outputHigh ? '🚨 报警中(HIGH)' : '✅ 正常(LOW)'} | ΔV=${((oa?.vin || 0) - (oa?.vref || 0)).toFixed(3)}V | 迟滞${oa?.hysteresis || 0}mV`
+  }
+  if (currentExpId.value === 'button-debounce') {
+    const btn = results.BTN1
+    if (btn?.error) return `⚠️ ${btn.errorTitle || '消抖异常'}`
+    return `${btn?.debounced ? '✅ 消抖成功' : '❌ 仍有抖动'} | ${btn?.mcuTriggerCount || 0}次触发 | 方式: ${{none:'无', rc:'RC', software:'软件'}[btn?.mode] || btn?.mode}`
+  }
   return '✅ 实验运行中'
 })
 
@@ -1318,6 +1478,11 @@ body {
   border-color: var(--primary);
   color: var(--primary);
 }
+.challenge-toggle.active {
+  background: linear-gradient(135deg, #e74c3c, #f39c12);
+  color: #fff;
+  border-color: transparent;
+}
 .fav-toggle.is-fav {
   color: var(--warning);
   border-color: var(--warning);
@@ -1441,6 +1606,42 @@ body {
 }
 
 /* 分类网格 */
+.difficulty-filter {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.diff-tab {
+  padding: 5px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-light);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.diff-tab:hover { border-color: var(--primary); }
+.diff-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.diff-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.diff-badge.beginner { background: rgba(46,204,113,0.2); color: #2ecc71; }
+.diff-badge.intermediate { background: rgba(241,196,15,0.2); color: #f1c40f; }
+.diff-badge.advanced { background: rgba(231,76,60,0.2); color: #e74c3c; }
+.exp-by-diff { position: relative; }
+
 .category-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1611,5 +1812,69 @@ body {
 .toast-enter-from, .toast-leave-to {
   opacity: 0;
   transform: translateX(-50%) translateY(20px);
+}
+
+/* ===== 移动端体验优化 ===== */
+@media (max-width: 600px) {
+  .app {
+    padding: 8px;
+    max-width: 100%;
+  }
+  .app.embed-mode {
+    padding: 4px;
+  }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  .share-btn, .back-btn {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+  .category-card {
+    min-height: 88px;
+    padding: 10px 6px;
+  }
+  .cat-icon { font-size: 28px; }
+  .cat-name { font-size: 13px; }
+  .cat-count { font-size: 11px; }
+  .experiment-title {
+    font-size: 18px;
+  }
+  .experiment-desc {
+    font-size: 13px;
+  }
+  .experiment-content {
+    gap: 8px;
+  }
+  .status-bar {
+    font-size: 13px;
+  }
+}
+
+/* 触摸优化：阻止双击缩放 */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+button, .clickable {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* 平滑滚动 */
+.experiment-content {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* 安全区域适配 */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .app {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
 }
 </style>

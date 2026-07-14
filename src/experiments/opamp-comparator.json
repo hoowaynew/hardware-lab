@@ -1,0 +1,85 @@
+{
+  "id": "opamp-comparator",
+  "topic_id": "analog-003",
+  "title": "运放比较器：温度阈值报警电路",
+  "category": "analog",
+  "difficulty": "intermediate",
+  "description": "调节参考电压和传感器输入，观察运放比较器输出翻转。阈值设错了永远不触发或一直报警！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "opamp-comparator",
+        "id": "OPAMP1",
+        "x": 200,
+        "y": 140,
+        "label": "运放比较器",
+        "defaultVref": 2.5,
+        "defaultVin": 1.65,
+        "defaultVcc": 5,
+        "defaultHysteresis": 0
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "oaVin",
+      "min": 0,
+      "max": 5,
+      "step": 0.01,
+      "default": 1.65,
+      "unit": "V",
+      "label": "传感器输入 V+"
+    },
+    {
+      "type": "slider",
+      "property": "oaVref",
+      "min": 0,
+      "max": 5,
+      "step": 0.01,
+      "default": 2.5,
+      "unit": "V",
+      "label": "参考电压 V-"
+    },
+    {
+      "type": "slider",
+      "property": "oaHysteresis",
+      "min": 0,
+      "max": 500,
+      "step": 10,
+      "default": 0,
+      "unit": "mV",
+      "label": "迟滞电压"
+    },
+    {
+      "type": "select",
+      "property": "oaOutputType",
+      "options": ["push-pull", "open-collector"],
+      "default": "push-pull",
+      "label": "输出类型"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "hysteresis === 0 && Math.abs(vin - vref) < 0.05",
+      "type": "OA_CHATTERING",
+      "title": "输出震荡！比较器抖动 ⚠️",
+      "explanation": "输入电压({vin}V)接近参考电压({vref}V)，无迟滞时噪声导致输出频繁翻转。\n加入迟滞电压(正反馈)可消除抖动。",
+      "article_ref": "analog-003"
+    },
+    {
+      "condition": "outputType === 'open-collector' && !hasPullup",
+      "type": "OA_NO_PULLUP",
+      "title": "开漏输出无法拉高 ⚠️",
+      "explanation": "开漏/集电极开路输出需要外部上拉电阻才能输出高电平。\n当前配置下输出高电平时为高阻态。",
+      "article_ref": "analog-003"
+    }
+  ],
+  "targets": {
+    "perfect": "Vin > Vref时输出高电平报警，加入50mV以上迟滞消除抖动",
+    "hint": "比较器: V+ > V- → 输出高；迟滞 = Rf/(R1+Rf) × Vout"
+  }
+}

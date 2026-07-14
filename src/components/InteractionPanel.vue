@@ -216,18 +216,63 @@ function formatToggleValue(val, interaction) {
   width: 100%;
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
+  height: 8px;
   background: var(--btn-bg);
-  border-radius: 3px;
+  border-radius: 4px;
   outline: none;
+  touch-action: manipulation;
 }
 .slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--primary);
   cursor: pointer;
+  border: 3px solid var(--surface-light);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.slider-input::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 3px solid var(--surface-light);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 600px) {
+  .interaction-panel {
+    padding: 10px;
+  }
+  .slider-row {
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .slider-label {
+    font-size: 13px;
+  }
+  .slider-value {
+    font-size: 13px;
+    min-width: 50px;
+  }
+  .slider-input {
+    height: 10px;
+  }
+  .slider-input::-webkit-slider-thumb {
+    width: 32px;
+    height: 32px;
+  }
+  .slider-input::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+  }
+  .mode-btn {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
 }
 </style>

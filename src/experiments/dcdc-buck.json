@@ -1,0 +1,100 @@
+{
+  "id": "dcdc-buck",
+  "topic_id": "power-002",
+  "title": "DC-DC Buck降压：12V→5V效率计算",
+  "category": "power",
+  "difficulty": "intermediate",
+  "description": "调节输入电压、开关频率和负载电流，观察Buck转换器的输出电压和效率。电感太小纹波爆炸！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "dcdc-buck",
+        "id": "BUCK1",
+        "x": 200,
+        "y": 140,
+        "label": "Buck转换器",
+        "defaultVin": 12,
+        "defaultVout": 5,
+        "defaultFreq": 500,
+        "defaultLoadCurrent": 500,
+        "defaultL": 22,
+        "defaultDutyPct": 42
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "buckVin",
+      "min": 8,
+      "max": 24,
+      "step": 1,
+      "default": 12,
+      "unit": "V",
+      "label": "输入电压 Vin"
+    },
+    {
+      "type": "slider",
+      "property": "buckFreq",
+      "min": 100,
+      "max": 2000,
+      "step": 50,
+      "default": 500,
+      "unit": "kHz",
+      "label": "开关频率"
+    },
+    {
+      "type": "slider",
+      "property": "buckL",
+      "min": 4,
+      "max": 100,
+      "step": 2,
+      "default": 22,
+      "unit": "μH",
+      "label": "电感量 L"
+    },
+    {
+      "type": "slider",
+      "property": "buckLoadCurrent",
+      "min": 100,
+      "max": 2000,
+      "step": 50,
+      "default": 500,
+      "unit": "mA",
+      "label": "负载电流"
+    },
+    {
+      "type": "slider",
+      "property": "buckDutyPct",
+      "min": 10,
+      "max": 90,
+      "step": 1,
+      "default": 42,
+      "unit": "%",
+      "label": "占空比 D"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "rippleRatio > 0.3",
+      "type": "BUCK_HIGH_RIPPLE",
+      "title": "纹波太大！输出不稳 ⚠️",
+      "explanation": "电感纹波电流占比 {rippleRatio} 超过30%。\n增大电感量L或提高开关频率可降低纹波。\nΔI = Vin×D×(1-D)/(L×f)",
+      "article_ref": "power-002"
+    },
+    {
+      "condition": "dutyPct < dutyMin || dutyPct > dutyMax",
+      "type": "BUCK_DUTY_RANGE",
+      "title": "占空比超出有效范围 ⚠️",
+      "explanation": "目标5V输出需要占空比D=Vout/Vin={idealDuty}%。\n当前占空比{dutyPct}%，输出电压偏差过大。",
+      "article_ref": "power-002"
+    }
+  ],
+  "targets": {
+    "perfect": "输出5V±0.1V，纹波<10%，效率>85%",
+    "hint": "Buck: Vout = Vin × D，连续模式纹波 ΔI = Vin×D×(1-D)/(2×L×f)"
+  }
+}

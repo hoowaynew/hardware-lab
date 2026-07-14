@@ -123,7 +123,10 @@ const componentSizes = {
   'ntc-sensor': { w: 50, h: 50 },
   'pcb-trace': { w: 50, h: 50 },
   'wifi-link': { w: 50, h: 50 },
-  'logic-analyzer': { w: 50, h: 50 }
+  'logic-analyzer': { w: 50, h: 50 },
+  'dcdc-buck': { w: 50, h: 50 },
+  'opamp-comparator': { w: 50, h: 50 },
+  'button-debounce': { w: 50, h: 50 }
 }
 
 const renderedComponents = computed(() => {

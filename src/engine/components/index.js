@@ -226,6 +226,39 @@ const componentDefs = {
       shape: 'logic-analyzer',
       color: '#9b59b6'
     }
+  },
+  'dcdc-buck': {
+    type: 'dcdc-buck',
+    label: 'DC-DC Buck',
+    icon: '⚡',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'dcdc-buck',
+      color: '#e74c3c'
+    }
+  },
+  'opamp-comparator': {
+    type: 'opamp-comparator',
+    label: '运放比较器',
+    icon: '📐',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'opamp-comparator',
+      color: '#3498db'
+    }
+  },
+  'button-debounce': {
+    type: 'button-debounce',
+    label: '按键消抖',
+    icon: '⏱️',
+    pins: [],
+    svg: {
+      width: 50, height: 50,
+      shape: 'button-debounce',
+      color: '#f39c12'
+    }
   }
 }
 

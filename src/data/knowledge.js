@@ -242,5 +242,73 @@ export const knowledgeData = {
       '逻辑分析仪采样率 ≥ 4倍时钟频率才能准确解码',
       '调试SPI问题：先用逻辑分析仪抓波形，确认CPOL/CPHA'
     ]
+  },
+
+  'dcdc-buck': {
+    title: 'DC-DC Buck降压转换器',
+    formulas: [
+      { label: '输出电压', expr: 'Vout = Vin × D (D=占空比)' },
+      { label: '纹波电流', expr: 'ΔIL = Vin×D×(1-D) / (L×f)' },
+      { label: '纹波电压', expr: 'ΔV = ΔIL / (8×f×Cout)' },
+      { label: '效率', expr: 'η = Pout / (Pout + Ploss)' }
+    ],
+    concepts: [
+      'Buck电路：高频开关 + 电感储能 + 电容滤波 → 降压',
+      '占空比D = Vout/Vin，连续模式(CCM)下输出与负载无关',
+      '电感纹波电流ΔIL：L太小纹波大，L太大响应慢体积大',
+      '开关频率越高 → 电感可以更小 → 但开关损耗增大',
+      '同步整流(用MOSFET替换二极管)可提升效率3-5%'
+    ],
+    tips: [
+      '纹波电流比ΔIL/Iout建议30%-40%为最佳',
+      '12V→5V/1A: D≈42%, L=22μH, f=500kHz → ΔIL≈280mA',
+      '输出电容ESR越低纹波越小，陶瓷电容优于电解',
+      '布局关键：开关节点面积最小化，减小EMI辐射'
+    ]
+  },
+
+  'opamp-comparator': {
+    title: '运放比较器与迟滞',
+    formulas: [
+      { label: '比较器', expr: 'Vout = (V+ > V−) ? V_High : V_Low' },
+      { label: '迟滞宽度', expr: 'Vhys = Rf/(R1+Rf) × ΔVout' },
+      { label: '上阈值', expr: 'V_th+ = Vref + Vhys/2' },
+      { label: '下阈值', expr: 'V_th− = Vref − Vhys/2' }
+    ],
+    concepts: [
+      '比较器：开环运放，输出只有高/低两种状态',
+      '无迟滞时，输入缓慢变化过阈值 → 噪声导致输出抖动',
+      '迟滞(正反馈)：引入两个阈值，上升用上阈值，下降用下阈值',
+      '开漏/开集输出需要外部上拉电阻才能输出高电平',
+      '施密特触发器 = 带迟滞的比较器'
+    ],
+    tips: [
+      '迟滞电压取50-100mV通常能消除大部分抖动',
+      '温度报警电路：V+接NTC分压，V−接参考电压',
+      '专用比较器(LM393)比运放开环使用更稳定、响应更快',
+      '迟滞电阻比Rf:R1 = Vhys:Vout，例如100mV迟滞/5V输出 → 1:50'
+    ]
+  },
+
+  'button-debounce': {
+    title: '按键消抖原理与方案',
+    formulas: [
+      { label: 'RC时间常数', expr: 'τ = R × C' },
+      { label: 'RC滤波截止频率', expr: 'fc = 1/(2πRC)' },
+      { label: '软件消抖', expr: 'if (read==0) delay(20ms); if (read==0) confirmed' }
+    ],
+    concepts: [
+      '机械按键按下/释放时触点弹跳，产生5-20ms抖动',
+      '无消抖：MCU一次按键检测到多次边沿 → 多次触发',
+      'RC硬件消抖：低通滤波器滤除高频抖动，τ > 抖动时间',
+      '软件消抖：检测到边沿后延时20ms再确认，简单但占用CPU',
+      '硬件消抖不占MCU资源，软件消抖不需要额外元件'
+    ],
+    tips: [
+      '典型RC参数：R=10kΩ C=100nF → τ=1ms（需增大C到1μF）',
+      '实际取τ ≈ 3-5倍抖动时间，确保完全滤除',
+      '软件消抖推荐：定时器轮询 + 状态机，不用delay阻塞',
+      'STM32可利用EXTI + 定时器实现硬件辅助消抖'
+    ]
   }
 }

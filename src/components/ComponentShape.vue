@@ -199,6 +199,37 @@
       <path d="M5 44 L45 44" fill="none" stroke="#3498db" stroke-width="1"/>
     </template>
 
+    <!-- DC-DC Buck（standalone） -->
+    <template v-else-if="type === 'dcdc-buck'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="14" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">BUCK</text>
+      <!-- 电感符号 -->
+      <path d="M10 25 Q14 20 18 25 Q22 20 26 25 Q30 20 34 25 Q38 20 42 25" fill="none" :stroke="color" stroke-width="1.5"/>
+      <!-- 降压箭头 -->
+      <text x="25" y="42" text-anchor="middle" fill="#e74c3c" font-size="8">12V→5V</text>
+    </template>
+
+    <!-- 运放比较器（standalone） -->
+    <template v-else-if="type === 'opamp-comparator'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="12" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">OPAMP</text>
+      <!-- 运放三角形 -->
+      <polygon points="14,20 14,36 36,28" fill="none" :stroke="color" stroke-width="1.5"/>
+      <text x="17" y="25" fill="#888" font-size="6">−</text>
+      <text x="17" y="34" fill="#888" font-size="6">+</text>
+    </template>
+
+    <!-- 按键消抖（standalone） -->
+    <template v-else-if="type === 'button-debounce'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="12" text-anchor="middle" :fill="color" font-size="7" font-weight="bold">DEBOUNCE</text>
+      <!-- 按键符号 -->
+      <rect x="15" y="20" width="20" height="14" rx="2" fill="none" :stroke="color" stroke-width="1.5"/>
+      <line x1="10" y1="27" x2="15" y2="27" :stroke="color" stroke-width="1.5"/>
+      <line x1="35" y1="27" x2="40" y2="27" :stroke="color" stroke-width="1.5"/>
+      <text x="25" y="42" text-anchor="middle" fill="#888" font-size="6">SW+RC</text>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

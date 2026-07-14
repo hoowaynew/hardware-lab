@@ -62,5 +62,20 @@ export const hintsData = {
     'SPI通信需要主从CPOL/CPHA一致',
     'Mode0: CPOL=0(空闲低) CPHA=0(第一个上升沿采样)',
     '答案：主机Mode0 → 从机也必须Mode0。CS拉低→发8个时钟周期→CS拉高'
+  ],
+  'dcdc-buck': [
+    'Buck的输出电压由占空比决定',
+    'Vout = Vin × D，12V→5V需要D≈42%；纹波ΔIL=Vin×D×(1-D)/(L×f)',
+    '答案：D=42%，L=22μH，f=500kHz时纹波≈280mA，纹波比<30% ✓'
+  ],
+  'opamp-comparator': [
+    '比较器输出由V+和V−的大小关系决定，但输入接近时容易抖动',
+    '加入迟滞(正反馈)可消除抖动，迟滞宽度=Rf/(R1+Rf)×ΔVout',
+    '答案：设置50-100mV迟滞，V+>V−时输出高电平报警，消抖成功'
+  ],
+  'button-debounce': [
+    '机械按键有5-20ms抖动，需要硬件或软件消抖',
+    'RC消抖: τ=RC > 抖动时间；软件消抖: delay(20ms)后再次读取',
+    '答案：选RC消抖 R=10kΩ C=1μF(τ=10ms>抖动)，或软件消抖delay=20ms'
   ]
 }

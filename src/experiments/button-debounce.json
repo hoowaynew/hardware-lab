@@ -1,0 +1,108 @@
+{
+  "id": "button-debounce",
+  "topic_id": "timing-002",
+  "title": "按键消抖：机械抖动 vs RC vs 软件",
+  "category": "timing",
+  "difficulty": "beginner",
+  "description": "机械按键按下会产生5-20ms的抖动。对比无消抖、RC硬件消抖和软件消抖的效果，选择正确方案。",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "button-debounce",
+        "id": "BTN1",
+        "x": 200,
+        "y": 140,
+        "label": "按键消抖",
+        "defaultBounceTime": 10,
+        "defaultDebounceMode": "none",
+        "defaultRcR": 10,
+        "defaultRcC": 100,
+        "defaultSwDelay": 20
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "btnBounceTime",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "default": 10,
+      "unit": "ms",
+      "label": "抖动时间"
+    },
+    {
+      "type": "select",
+      "property": "btnDebounceMode",
+      "options": ["none", "rc", "software"],
+      "default": "none",
+      "label": "消抖方式"
+    },
+    {
+      "type": "slider",
+      "property": "btnRcR",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "default": 10,
+      "unit": "kΩ",
+      "label": "RC电阻 R"
+    },
+    {
+      "type": "slider",
+      "property": "btnRcC",
+      "min": 10,
+      "max": 1000,
+      "step": 10,
+      "default": 100,
+      "unit": "nF",
+      "label": "RC电容 C"
+    },
+    {
+      "type": "slider",
+      "property": "btnSwDelay",
+      "min": 5,
+      "max": 50,
+      "step": 1,
+      "default": 20,
+      "unit": "ms",
+      "label": "软件消抖延时"
+    },
+    {
+      "type": "button",
+      "property": "btnPress",
+      "label": "按下按键"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "debounceMode === 'none' && bounceTime > 5",
+      "type": "BTN_BOUNCING",
+      "title": "按键抖动！检测到多次触发 ⚠️",
+      "explanation": "无消抖时，{bounceTime}ms抖动期间MCU检测到多次上升/下降沿。\n一次按键变成了{bounceCount}次触发。\n请选择RC硬件消抖或软件消抖。",
+      "article_ref": "timing-002"
+    },
+    {
+      "condition": "debounceMode === 'rc' && rcTimeConstant < bounceTime",
+      "type": "BTN_RC_TOO_SMALL",
+      "title": "RC时间常数太小！消抖不充分 ⚠️",
+      "explanation": "τ = R×C = {rcR}kΩ × {rcC}nF = {rcTimeConstant}μs\n抖动时间{bounceTime}ms >> τ，RC无法滤除抖动。\n增大R或C使τ > 抖动时间。",
+      "article_ref": "timing-002"
+    },
+    {
+      "condition": "debounceMode === 'software' && swDelay < bounceTime",
+      "type": "BTN_SW_DELAY_SHORT",
+      "title": "软件延时太短！仍有抖动 ⚠️",
+      "explanation": "延时{swDelay}ms < 抖动时间{bounceTime}ms。\n消抖延时必须大于抖动时间，通常取20ms。",
+      "article_ref": "timing-002"
+    }
+  ],
+  "targets": {
+    "perfect": "选择任一消抖方式，使一次按键只产生一次触发",
+    "hint": "RC消抖: τ = R×C；软件消抖: delay(20ms)后再次读取"
+  }
+}

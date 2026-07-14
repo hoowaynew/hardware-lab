@@ -231,6 +231,9 @@ export class Simulator {
       'pcb-trace': () => this._simulatePCBTrace(comp),
       'wifi-link': () => this._simulateWiFi(comp),
       'logic-analyzer': () => this._simulateLogicAnalyzer(comp),
+      'dcdc-buck': () => this._simulateDCDCBuck(comp),
+      'opamp-comparator': () => this._simulateOpAmp(comp),
+      'button-debounce': () => this._simulateButtonDebounce(comp),
       oscilloscope: () => ({ state: 'idle' }),
       probe: () => ({ state: 'idle' })
     }
@@ -1218,5 +1221,201 @@ export class Simulator {
       return (~shifted) & 0xFF
     }
     return original
+  }
+
+  /**
+   * DC-DC Buck降压转换器仿真
+   */
+  _simulateDCDCBuck(comp) {
+    const vin = this.context.buckVin || comp.defaultVin || 12
+    const freq = (this.context.buckFreq || comp.defaultFreq || 500) * 1000 // kHz → Hz
+    const L = (this.context.buckL || comp.defaultL || 22) * 1e-6 // μH → H
+    const loadCurrent = (this.context.buckLoadCurrent || comp.defaultLoadCurrent || 500) / 1000 // mA → A
+    const dutyPct = this.context.buckDutyPct || comp.defaultDutyPct || 42
+    const D = dutyPct / 100
+
+    // 输出电压 (理想)
+    const voutIdeal = vin * D
+    // 实际考虑损耗 (MOSFET导通+二极管压降)
+    const vdropMOS = 0.2
+    const vdropDiode = 0.5
+    const vout = vin * D - vdropMOS * D - vdropDiode * (1 - D)
+
+    // 纹波电流 ΔIL = Vin * D * (1-D) / (L * f)
+    const rippleCurrent = (vin * D * (1 - D) / (L * freq)) * 1000 // mA
+    // 纹波电压 ΔVout = ΔIL / (8 * f * Cout), 假设Cout=22μF
+    const Cout = 22e-6
+    const ripple = (rippleCurrent / 1000) / (8 * freq * Cout) * 1000 // mV
+
+    // 效率 = Pout / (Pout + Ploss)
+    const Pout = vout * loadCurrent
+    const PcondMOS = loadCurrent * loadCurrent * 0.05 * D // MOSFET导通损耗
+    const PcondDiode = vdropDiode * loadCurrent * (1 - D) // 二极管损耗
+    const Pswitch = vin * loadCurrent * 0.1 // 开关损耗近似
+    const Pinductor = loadCurrent * loadCurrent * 0.03 // 电感DCR损耗
+    const Ploss = PcondMOS + PcondDiode + Pswitch + Pinductor
+    const efficiency = Pout / (Pout + Ploss) * 100
+
+    // 纹波电流比 = ΔIL / I_load
+    const rippleRatio = rippleCurrent / (loadCurrent * 1000)
+
+    // 目标占空比 (5V输出)
+    const idealDuty = (5 / vin * 100)
+    const dutyMin = idealDuty - 5
+    const dutyMax = idealDuty + 5
+
+    const result = {
+      vin, vout, ripple, rippleCurrent, efficiency, powerLoss: Ploss,
+      freq: this.context.buckFreq || 500, l: this.context.buckL || 22,
+      dutyPct, idealDuty, rippleRatio,
+      switching: true, loadState: 'running'
+    }
+
+    // 错误检测
+    if (rippleRatio > 0.3) {
+      result.error = 'BUCK_HIGH_RIPPLE'
+      result.errorTitle = '纹波太大！输出不稳 ⚠️'
+      result.errorExplanation = `电感纹波电流占比 ${(rippleRatio * 100).toFixed(1)}% 超过30%。\n增大电感量L或提高开关频率可降低纹波。\nΔI = Vin×D×(1-D)/(L×f)`
+    } else if (dutyPct < dutyMin || dutyPct > dutyMax) {
+      result.error = 'BUCK_DUTY_RANGE'
+      result.errorTitle = '占空比超出有效范围 ⚠️'
+      result.errorExplanation = `目标5V输出需要占空比D=Vout/Vin=${idealDuty.toFixed(1)}%。\n当前占空比${dutyPct}%，输出电压${vout.toFixed(2)}V偏差过大。`
+    }
+
+    return result
+  }
+
+  /**
+   * 运放比较器仿真
+   */
+  _simulateOpAmp(comp) {
+    const vin = this.context.oaVin !== undefined ? this.context.oaVin : (comp.defaultVin || 1.65)
+    const vref = this.context.oaVref !== undefined ? this.context.oaVref : (comp.defaultVref || 2.5)
+    const vcc = comp.defaultVcc || 5
+    const hysteresis = (this.context.oaHysteresis || 0) // mV
+    const outputType = this.context.oaOutputType || 'push-pull'
+
+    // 迟滞电压转V
+    const hystV = hysteresis / 1000
+
+    // 比较器逻辑 + 迟滞
+    let outputHigh
+    if (hystV > 0) {
+      // 有迟滞：需要知道之前的状态
+      const prevHigh = this._opampPrevHigh || false
+      const upperThresh = vref + hystV / 2
+      const lowerThresh = vref - hystV / 2
+      if (vin > upperThresh) outputHigh = true
+      else if (vin < lowerThresh) outputHigh = false
+      else outputHigh = prevHigh // 在迟滞区间内保持
+      this._opampPrevHigh = outputHigh
+    } else {
+      outputHigh = vin > vref
+    }
+
+    // 输出电压
+    let outputVoltage
+    if (outputType === 'open-collector') {
+      outputVoltage = outputHigh ? 0 : 0 // 需要上拉才能输出高
+    } else {
+      outputVoltage = outputHigh ? vcc : 0
+    }
+
+    // 检测抖动 (无迟滞且输入接近参考)
+    const chattering = hystV === 0 && Math.abs(vin - vref) < 0.05
+
+    const result = {
+      vin, vref, vcc, hysteresis, outputType,
+      outputHigh, outputVoltage, chattering,
+      hasPullup: outputType !== 'open-collector',
+      loadState: 'running'
+    }
+
+    if (chattering) {
+      result.error = 'OA_CHATTERING'
+      result.errorTitle = '输出震荡！比较器抖动 ⚠️'
+      result.errorExplanation = `输入电压(${vin.toFixed(2)}V)接近参考电压(${vref.toFixed(2)}V)，无迟滞时噪声导致输出频繁翻转。\n加入迟滞电压(正反馈)可消除抖动。`
+    } else if (outputType === 'open-collector') {
+      result.error = 'OA_NO_PULLUP'
+      result.errorTitle = '开漏输出无法拉高 ⚠️'
+      result.errorExplanation = `开漏/集电极开路输出需要外部上拉电阻才能输出高电平。\n当前配置下输出高电平时为高阻态。`
+    }
+
+    return result
+  }
+
+  /**
+   * 按键消抖仿真
+   */
+  _simulateButtonDebounce(comp) {
+    const bounceTime = this.context.btnBounceTime !== undefined ? this.context.btnBounceTime : (comp.defaultBounceTime || 10)
+    const mode = this.context.btnDebounceMode || comp.defaultDebounceMode || 'none'
+    const rcR = this.context.btnRcR || comp.defaultRcR || 10 // kΩ
+    const rcC = this.context.btnRcC || comp.defaultRcC || 100 // nF
+    const swDelay = this.context.btnSwDelay || comp.defaultSwDelay || 20 // ms
+    const pressed = this.context.btnPress || false
+
+    // RC时间常数 τ = R*C (kΩ * nF = μs)
+    const rcTau = rcR * rcC // μs
+    const rcTauMs = rcTau / 1000
+
+    // 抖动产生多次边沿
+    const bounceCount = pressed ? Math.max(1, Math.floor(bounceTime / 2)) : 0
+    const hasBounce = bounceTime > 5 && pressed
+
+    let mcuTriggerCount = 0
+    let debounced = false
+    let rcTooSmall = false
+    let swTooShort = false
+
+    if (!pressed) {
+      mcuTriggerCount = 0
+      debounced = true
+    } else if (mode === 'none') {
+      mcuTriggerCount = hasBounce ? bounceCount : 1
+      debounced = !hasBounce
+    } else if (mode === 'rc') {
+      if (rcTauMs < bounceTime) {
+        mcuTriggerCount = Math.max(1, Math.floor(bounceTime / rcTauMs))
+        rcTooSmall = true
+        debounced = false
+      } else {
+        mcuTriggerCount = 1
+        debounced = true
+      }
+    } else if (mode === 'software') {
+      if (swDelay < bounceTime) {
+        mcuTriggerCount = Math.max(1, Math.ceil(bounceTime / swDelay))
+        swTooShort = true
+        debounced = false
+      } else {
+        mcuTriggerCount = 1
+        debounced = true
+      }
+    }
+
+    const result = {
+      pressed, mode, rcR, rcC, swDelay, bounceTime,
+      hasBounce, bounceCount, mcuTriggerCount,
+      debounced, rcTooSmall, swTooShort,
+      rcTau, signalLine: pressed,
+      loadState: 'running'
+    }
+
+    if (mode === 'none' && hasBounce) {
+      result.error = 'BTN_BOUNCING'
+      result.errorTitle = '按键抖动！检测到多次触发 ⚠️'
+      result.errorExplanation = `无消抖时，${bounceTime}ms抖动期间MCU检测到${bounceCount}次上升/下降沿。\n一次按键变成了${bounceCount}次触发。\n请选择RC硬件消抖或软件消抖。`
+    } else if (mode === 'rc' && rcTooSmall) {
+      result.error = 'BTN_RC_TOO_SMALL'
+      result.errorTitle = 'RC时间常数太小！消抖不充分 ⚠️'
+      result.errorExplanation = `τ = R×C = ${rcR}kΩ × ${rcC}nF = ${rcTau}μs (${rcTauMs.toFixed(2)}ms)\n抖动时间${bounceTime}ms >> τ，RC无法滤除抖动。\n增大R或C使τ > 抖动时间。`
+    } else if (mode === 'software' && swTooShort) {
+      result.error = 'BTN_SW_DELAY_SHORT'
+      result.errorTitle = '软件延时太短！仍有抖动 ⚠️'
+      result.errorExplanation = `延时${swDelay}ms < 抖动时间${bounceTime}ms。\n消抖延时必须大于抖动时间，通常取20ms。`
+    }
+
+    return result
   }
 }

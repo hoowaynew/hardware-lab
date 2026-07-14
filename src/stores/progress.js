@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'hw-lab-progress'
-const TOTAL_EXPERIMENTS = 12
+const TOTAL_EXPERIMENTS = 15
 
 export const useProgressStore = defineStore('progress', {
   state: () => ({
