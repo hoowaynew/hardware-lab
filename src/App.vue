@@ -79,6 +79,10 @@
             class="achievement-badge"
           >{{ getAchievementName(achId) }}</span>
         </div>
+        <!-- 学习路径入口 -->
+        <button class="path-btn" @click="showLearningPath = true">
+          🛤️ 学习路径 · {{ pathCompletedCount }}/{{ allExperiments.length }} 步完成
+        </button>
       </div>
 
       <!-- 统计仪表盘 -->
@@ -221,6 +225,7 @@
           <span class="meta-tag">{{ categoryLabel }}</span>
           <span class="meta-tag">{{ difficultyLabel }}</span>
           <button class="share-btn" @click="copyShareLink">🔗 分享</button>
+          <button class="share-btn" @click="showShareCard = true">📸 卡片</button>
           <button
             v-if="!isEmbed && hasChallenge"
             class="share-btn challenge-toggle"
@@ -579,6 +584,12 @@
       </div>
     </main>
 
+    <!-- 实验笔记 -->
+    <ExperimentNote
+      v-if="store.currentExperiment && !isEmbed"
+      :experimentId="currentExpId"
+    />
+
     <!-- 错误弹窗 -->
     <ErrorPopup
       :visible="showErrorPopup"
@@ -606,6 +617,30 @@
       :simResult="store.simResult"
       @close="showChallenge = false"
       @complete="onChallengeComplete"
+    />
+
+    <!-- 分享卡片 -->
+    <ShareCard
+      v-if="!isEmbed"
+      :visible="showShareCard"
+      :experimentId="currentExpId"
+      :experimentTitle="store.currentExperiment?.title || ''"
+      :experimentIcon="currentExpMeta?.icon || '🔬'"
+      :category="categoryLabel"
+      :difficulty="difficultyLabel"
+      :stars="progress.completed[currentExpId]?.stars || 0"
+      :params="store.userState"
+      :statusText="statusText"
+      @close="showShareCard = false"
+    />
+
+    <!-- 学习路径 -->
+    <LearningPath
+      v-if="!isEmbed"
+      :visible="showLearningPath"
+      :completed="progress.completed"
+      @close="showLearningPath = false"
+      @start="loadExperiment"
     />
   </div>
 </template>
@@ -638,6 +673,9 @@ import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
 import StatsDashboard from './components/StatsDashboard.vue'
 import Onboarding from './components/Onboarding.vue'
+import ShareCard from './components/ShareCard.vue'
+import LearningPath from './components/LearningPath.vue'
+import ExperimentNote from './components/ExperimentNote.vue'
 import { knowledgeData } from './data/knowledge.js'
 import { hintsData } from './data/hints.js'
 import { challengeData } from './data/challenges.js'
@@ -719,6 +757,8 @@ const experimentsByDifficulty = computed(() => {
   return allExperiments.filter(e => (e.difficulty || 'beginner') === selectedDifficulty.value)
 })
 const showSettings = ref(false)
+const showShareCard = ref(false)
+const showLearningPath = ref(false)
 
 // 加载进度
 onMounted(() => {
@@ -773,6 +813,16 @@ const favoriteExperiments = computed(() => {
   return favorites.favorites
     .map(id => allExperiments.find(e => e.id === id))
     .filter(Boolean)
+})
+
+// 当前实验元数据
+const currentExpMeta = computed(() => {
+  return allExperiments.find(e => e.id === currentExpId.value)
+})
+
+// 学习路径完成数
+const pathCompletedCount = computed(() => {
+  return allExperiments.filter(e => progress.completed[e.id]).length
 })
 
 // 当前实验的提示数据
@@ -1603,6 +1653,23 @@ body {
   background: rgba(243, 156, 18, 0.15);
   color: var(--warning);
   white-space: nowrap;
+}
+.path-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(52,152,219,0.15), rgba(46,204,113,0.15));
+  border: 1px solid rgba(52,152,219,0.3);
+  border-radius: 10px;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.path-btn:hover {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, rgba(52,152,219,0.25), rgba(46,204,113,0.25));
+  transform: translateY(-1px);
 }
 
 /* 分类网格 */
