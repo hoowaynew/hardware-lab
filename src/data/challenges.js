@@ -420,5 +420,65 @@ export const challengeData = {
         detail: `衰减=${att}x, 补偿=${comp.toFixed(3)}, 带宽=${probe?.bandwidth?.toFixed(1)}MHz`
       }
     }
+  },
+  'ble-link-budget': {
+    title: '挑战：穿墙后信号可达',
+    goal: 'RSSI ≥ -80dBm（穿一堵墙，5m距离）',
+    constraint: '障碍物必须选"一堵墙"',
+    timeLimit: 60,
+    check: (result) => {
+      const ble = result?.results?.BLE1
+      const rssi = ble?.rssi ?? -200
+      const obstacle = ble?.obstacleName ?? ''
+      const hasError = ble?.error ? true : false
+      const wallSet = obstacle.includes('墙')
+      return {
+        passed: rssi >= -80 && wallSet && !hasError,
+        score: Math.max(0, 100 + (rssi + 80) - (hasError ? 50 : 0) - (wallSet ? 0 : 30)),
+        detail: `RSSI=${rssi}dBm, 障碍=${obstacle}, 余量=${ble?.margin}dB`
+      }
+    }
+  },
+  'rs485-bus': {
+    title: '挑战：1Mbps长线稳定通信',
+    goal: '眼图质量≥80%，无振铃',
+    constraint: '波特率1Mbps，线缆≥50m',
+    timeLimit: 60,
+    check: (result) => {
+      const rs = result?.results?.RS1
+      const eye = rs?.eyeQuality ?? 0
+      const ringing = rs?.ringing ?? false
+      const baud = rs?.baudrate ?? 0
+      const len = rs?.cableLength ?? 0
+      const hasError = rs?.error ? true : false
+      const baudOk = baud >= 1000000
+      const lenOk = len >= 50
+      return {
+        passed: eye >= 80 && !ringing && !hasError && baudOk && lenOk,
+        score: Math.max(0, eye - (ringing ? 30 : 0) - (hasError ? 20 : 0) - (!baudOk ? 40 : 0) - (!lenOk ? 20 : 0)),
+        detail: `眼图=${eye}%, 振铃=${ringing}, 波特=${baud}, 线长=${len}m`
+      }
+    }
+  },
+  'sallen-key-filter': {
+    title: '挑战：设计Butterworth低通滤波器',
+    goal: 'Q=0.707±0.05，增益≤1dB',
+    constraint: '截止频率在1kHz~5kHz之间',
+    timeLimit: 90,
+    check: (result) => {
+      const sk = result?.results?.SK1
+      const q = sk?.Q ?? 0
+      const gainDb = sk?.gainDb ?? 0
+      const fc = sk?.fc ?? 0
+      const hasError = sk?.error ? true : false
+      const qOk = q >= 0.657 && q <= 0.757
+      const gainOk = Math.abs(gainDb) <= 1.5
+      const fcOk = fc >= 1000 && fc <= 5000
+      return {
+        passed: qOk && gainOk && fcOk && !hasError,
+        score: Math.max(0, 100 - Math.abs(q - 0.707) * 100 - Math.abs(gainDb) * 10 - (!fcOk ? 30 : 0) - (hasError ? 20 : 0)),
+        detail: `Q=${q.toFixed(3)}, 增益=${gainDb.toFixed(1)}dB, fc=${fc.toFixed(0)}Hz`
+      }
+    }
   }
 }

@@ -1,0 +1,76 @@
+{
+  "id": "rs485-bus",
+  "topic_id": "comm-003",
+  "title": "RS-485差分总线：终端电阻与信号完整性",
+  "category": "comm",
+  "difficulty": "intermediate",
+  "description": "调节波特率、线缆长度、终端电阻，看差分信号怎么被反射毁掉。没终端电阻全是振铃！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "rs485-bus",
+        "id": "RS1",
+        "x": 200,
+        "y": 140,
+        "label": "RS-485总线",
+        "defaultBaudrate": 9600,
+        "defaultCableLength": 30,
+        "defaultTerminator": true,
+        "defaultNodeCount": 4,
+        "defaultCableType": "twisted-pair"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "toggle",
+      "property": "rsBaudrate",
+      "values": [9600, 19200, 115200, 1000000, 10000000],
+      "labels": ["9.6k", "19.2k", "115.2k", "1M", "10M"],
+      "label": "波特率 (bps)"
+    },
+    {
+      "type": "slider",
+      "property": "rsCableLength",
+      "min": 1,
+      "max": 1200,
+      "step": 1,
+      "default": 30,
+      "unit": "m",
+      "label": "线缆长度"
+    },
+    {
+      "type": "toggle",
+      "property": "rsTerminator",
+      "values": [true, false],
+      "labels": ["有终端电阻", "无终端电阻"],
+      "label": "终端电阻 (120Ω)"
+    },
+    {
+      "type": "slider",
+      "property": "rsNodeCount",
+      "min": 2,
+      "max": 32,
+      "step": 1,
+      "default": 4,
+      "unit": "个",
+      "label": "节点数量"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "!hasTerminator && baudrate > 115200",
+      "type": "RS485_NO_TERMINATION",
+      "title": "无终端电阻！信号反射严重 ⚠️",
+      "explanation": "波特率 {baudrate} bps 下无终端电阻。\n信号到达线缆末端被反射，产生振铃。\nRS-485必须在总线两端各加120Ω终端电阻。",
+      "article_ref": "comm-003"
+    }
+  ],
+  "targets": {
+    "perfect": "终端电阻正确，线缆长度满足波特率要求，信号眼图清晰",
+    "hint": "最大线缆长度 ≈ 10⁷ / 波特率 (m·bps)，终端电阻=特征阻抗(120Ω)"
+  }
+}

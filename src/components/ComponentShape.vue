@@ -324,6 +324,39 @@
       <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">10x</text>
     </template>
 
+    <template v-else-if="type === 'ble-link'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">BLE</text>
+      <!-- 蓝牙符号 -->
+      <path d="M 25 15 L 21 20 L 29 25 L 21 30 L 25 35" fill="none" :stroke="color" stroke-width="1.5"/>
+      <path d="M 25 15 L 29 20 L 21 25 L 29 30 L 25 35" fill="none" :stroke="color" stroke-width="1.5"/>
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">2.4G</text>
+    </template>
+
+    <template v-else-if="type === 'rs485-bus'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">RS485</text>
+      <!-- 差分线符号 A/B -->
+      <line x1="10" y1="22" x2="40" y2="22" :stroke="color" stroke-width="1.5"/>
+      <line x1="10" y1="32" x2="40" y2="32" :stroke="color" stroke-width="1.5"/>
+      <text x="6" y="24" :fill="color" font-size="6" font-weight="bold">A</text>
+      <text x="6" y="34" :fill="color" font-size="6" font-weight="bold">B</text>
+      <circle cx="40" cy="22" r="2" :fill="color"/>
+      <circle cx="40" cy="32" r="2" :fill="color"/>
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">120Ω</text>
+    </template>
+
+    <template v-else-if="type === 'sallen-key-filter'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="5" font-weight="bold">S-K</text>
+      <!-- 运放三角形 -->
+      <path d="M 12 18 L 38 25 L 12 32 Z" fill="none" :stroke="color" stroke-width="1.5"/>
+      <text x="16" y="26" :fill="color" font-size="5">+</text>
+      <text x="16" y="31" :fill="color" font-size="5">−</text>
+      <!-- R和C标注 -->
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">2nd LPF</text>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

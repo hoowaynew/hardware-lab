@@ -1,0 +1,81 @@
+{
+  "id": "ble-link-budget",
+  "topic_id": "wireless-002",
+  "title": "BLE蓝牙链路预算：2.4GHz传播与人体衰减",
+  "category": "wireless",
+  "difficulty": "intermediate",
+  "description": "调节发射功率、距离和障碍物，看蓝牙信号怎么掉。人体就是一大障碍！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "ble-link",
+        "id": "BLE1",
+        "x": 200,
+        "y": 140,
+        "label": "BLE链路",
+        "defaultTxPower": 0,
+        "defaultTxAntennaGain": 0,
+        "defaultRxAntennaGain": 0,
+        "defaultFreq": 2402,
+        "defaultDistance": 5,
+        "defaultObstacle": "none",
+        "defaultRxSensitivity": -90
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "bleTxPower",
+      "min": -20,
+      "max": 10,
+      "step": 1,
+      "default": 0,
+      "unit": "dBm",
+      "label": "发射功率"
+    },
+    {
+      "type": "slider",
+      "property": "bleDistance",
+      "min": 0.5,
+      "max": 50,
+      "step": 0.5,
+      "default": 5,
+      "unit": "m",
+      "label": "传输距离"
+    },
+    {
+      "type": "slider",
+      "property": "bleFreq",
+      "min": 2402,
+      "max": 2480,
+      "step": 2,
+      "default": 2402,
+      "unit": "MHz",
+      "label": "信道频率"
+    },
+    {
+      "type": "toggle",
+      "property": "bleObstacle",
+      "values": ["none", "body", "wall", "pocket"],
+      "labels": ["空旷", "人体遮挡", "一堵墙", "口袋中"],
+      "label": "障碍物"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "rssi < rxSensitivity",
+      "type": "BLE_SIGNAL_TOO_WEAK",
+      "title": "信号太弱！连接断开 ⚠️",
+      "explanation": "接收信号强度 {rssi}dBm 低于BLE灵敏度 {rxSensitivity}dBm。\n2.4GHz信号被障碍物吸收/反射，链路预算不足。\n缩短距离、消除遮挡、或增大发射功率。",
+      "article_ref": "wireless-002"
+    }
+  ],
+  "targets": {
+    "perfect": "RSSI ≥ -70dBm，信号质量良好",
+    "hint": "BLE 2.4GHz: FSPL = 20log₁₀(d) + 20log₁₀(f) + 27.55（f MHz, d m）"
+  }
+}

@@ -104,7 +104,10 @@ const pathSteps = [
   { id: 'lc-bandpass', icon: '〰️', title: 'LC带通滤波器', phase: '进阶', desc: '谐振频率f₀=1/(2π√LC)，Q值与带宽', prerequisite: 'rc-filter' },
   { id: 'adc-sampling', icon: '📋', title: 'ADC采样量化', phase: '进阶', desc: '分辨率/LSB/量化误差/SNR/采样保持', prerequisite: 'gpio-modes' },
   { id: 'pcb-ground-loop', icon: '🎨', title: '地平面回流路径', phase: '设计', desc: 'EMI根源：回流环路面积与地平面完整性', prerequisite: 'pcb-trace-impedance' },
-  { id: 'oscilloscope-probe', icon: '🐛', title: '示波器探头补偿', phase: '调试', desc: '1x/10x衰减、补偿电容、方波校准', prerequisite: 'logic-analyzer-debug' }
+  { id: 'oscilloscope-probe', icon: '🐛', title: '示波器探头补偿', phase: '调试', desc: '1x/10x衰减、补偿电容、方波校准', prerequisite: 'logic-analyzer-debug' },
+  { id: 'ble-link-budget', icon: '📡', title: 'BLE蓝牙链路预算', phase: '无线', desc: '2.4GHz传播损耗、障碍衰减、链路余量', prerequisite: 'wifi-signal-attenuation' },
+  { id: 'rs485-bus', icon: '🔗', title: 'RS-485差分总线', phase: '通信', desc: '终端电阻、信号完整性、差分抗干扰', prerequisite: 'uart-signal' },
+  { id: 'sallen-key-filter', icon: '〰️', title: 'Sallen-Key有源滤波', phase: '进阶', desc: '二阶有源低通、Q值与频率响应曲线', prerequisite: 'lc-bandpass' }
 ]
 
 const completedInPath = computed(() => {

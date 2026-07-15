@@ -578,5 +578,68 @@ export const knowledgeData = {
       '高频测量(>5MHz)务必用10x探头',
       '100x探头用于高压测量(>40V)，输入电容更小'
     ]
+  },
+  'ble-link-budget': {
+    title: 'BLE蓝牙链路预算原理',
+    formulas: [
+      { label: '自由空间损耗', expr: 'FSPL = 20log₁₀(d) + 20log₁₀(f_MHz) + 27.55' },
+      { label: '接收信号强度', expr: 'RSSI = TxPower + Gains - FSPL - Obstacle' },
+      { label: '链路余量', expr: 'Margin = RSSI - RxSensitivity' }
+    ],
+    concepts: [
+      'BLE工作在2.4GHz ISM频段，2402~2480MHz共40个信道',
+      '典型BLE发射功率-20~+10dBm，接收灵敏度约-90dBm',
+      '人体含水量高，对2.4GHz信号吸收约8dB（一堵墙约15dB）',
+      '链路余量<10dB时连接不稳定，<0dB则完全断开',
+      'RSSI≥-60dBm为极佳，-70~-80dBm可用，<-90dBm断连'
+    ],
+    tips: [
+      '穿墙/人体遮挡是BLE掉线主因，尽量保持视线可达',
+      '将发射功率从0dBm提到+10dBm可增加约3倍覆盖距离',
+      '2.4GHz与WiFi/微波炉同频段，密集环境干扰严重',
+      'BLE 5.0长距离模式(Coded PHY)可用更低速率换灵敏度+12dB'
+    ]
+  },
+  'rs485-bus': {
+    title: 'RS-485差分总线原理',
+    formulas: [
+      { label: '最大线缆长度', expr: 'L_max ≈ 10⁷ / Baudrate (m·bps)' },
+      { label: '终端电阻', expr: 'R_term = Z₀ = 120Ω' },
+      { label: '传播延迟', expr: 't_pd = L × 5ns/m (双绞线)' }
+    ],
+    concepts: [
+      'RS-485采用差分信号(A-B)，抗共模干扰能力强',
+      '双绞线特征阻抗120Ω，末端必须接终端电阻消除反射',
+      '最多32个单位负载(UL)，1/8UL收发器可扩到256节点',
+      '无终端电阻时信号在末端反射，产生振铃和误码',
+      '临界长度 = rise_time × v/2，短于此长度可不加终端'
+    ],
+    tips: [
+      '总线两端各加一个120Ω终端电阻，中间节点不加',
+      '失效偏置电阻(Bias)确保总线空闲时A>B，避免随机翻转',
+      '10Mbps下线缆最长约12m，9600bps可达1200m',
+      '星型拓扑会引入分支反射，应使用手拉手链式布线'
+    ]
+  },
+  'sallen-key-filter': {
+    title: 'Sallen-Key有源滤波器原理',
+    formulas: [
+      { label: '截止频率', expr: 'fc = 1 / (2πRC)' },
+      { label: '品质因数', expr: 'Q = 1 / (3-K)，K为运放增益' },
+      { label: '传递函数', expr: 'H(s) = Kωc² / (s² + ωc/Q·s + ωc²)' }
+    ],
+    concepts: [
+      'Sallen-Key是二阶有源滤波器最简结构，仅需1个运放+2R+2C',
+      'Q=0.707为Butterworth响应，通带最平坦无纹波',
+      'Q>0.707为Chebyshev响应，截止更陡但通带有纹波',
+      'Q>1时截止频率附近出现谐振峰，Q过大可能自激振荡',
+      '阻带衰减-40dB/十倍频程（二阶滚降），比一阶多20dB/dec'
+    ],
+    tips: [
+      '先用fc=1/(2πRC)算R和C，再调K控制Q值',
+      'Butterworth(Q=0.707)是最常用的低通响应',
+      'K=1(电压跟随器)时Q=0.5，过阻尼响应不够陡',
+      'K接近3时Q趋无穷大，滤波器变成振荡器！K必须<3'
+    ]
   }
 }

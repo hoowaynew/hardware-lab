@@ -1,0 +1,82 @@
+{
+  "id": "sallen-key-filter",
+  "topic_id": "signal-003",
+  "title": "Sallen-Key有源滤波器：Q值与频率响应",
+  "category": "signal",
+  "difficulty": "advanced",
+  "description": "调节R、C和Q值，看二阶有源低通滤波器的频率响应。Q太高会 peaked！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "sallen-key-filter",
+        "id": "SK1",
+        "x": 200,
+        "y": 140,
+        "label": "Sallen-Key滤波器",
+        "defaultR": 10000,
+        "defaultC": 10,
+        "defaultQ": 0.707,
+        "defaultFreq": 100,
+        "defaultInputType": "sine"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "skR",
+      "min": 1000,
+      "max": 100000,
+      "step": 1000,
+      "default": 10000,
+      "unit": "Ω",
+      "label": "电阻 R"
+    },
+    {
+      "type": "slider",
+      "property": "skC",
+      "min": 1,
+      "max": 100,
+      "step": 1,
+      "default": 10,
+      "unit": "nF",
+      "label": "电容 C"
+    },
+    {
+      "type": "slider",
+      "property": "skQ",
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "default": 0.707,
+      "unit": "",
+      "label": "品质因数 Q"
+    },
+    {
+      "type": "slider",
+      "property": "skFreq",
+      "min": 10,
+      "max": 100000,
+      "step": 10,
+      "default": 100,
+      "unit": "Hz",
+      "label": "输入信号频率"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "q > 2 && gainPeak > 3",
+      "type": "SK_Q_TOO_HIGH",
+      "title": "Q值过高！通带内出现谐振峰 ⚠️",
+      "explanation": "Q={q}导致截止频率附近增益 peaked 到 {gainPeak}dB。\n高Q值使滤波器在fc附近产生谐振尖峰，甚至可能自激振荡。\nButterworth响应Q=0.707是最平坦通带。",
+      "article_ref": "signal-003"
+    }
+  ],
+  "targets": {
+    "perfect": "Q=0.707（Butterworth最平坦响应），截止频率匹配信号",
+    "hint": "fc = 1/(2πRC)，Q=0.707为Butterworth（最平坦），Q>1有峰值"
+  }
+}

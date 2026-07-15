@@ -13,7 +13,7 @@ npm run build    # 构建到 dist/
 npm run preview  # 预览构建结果
 ```
 
-## 27个实验 · 11大分类
+## 30个实验 · 11大分类
 
 | # | 实验 | 分类 | 难度 | 交互 | 错误触发 |
 |---|------|------|------|------|----------|
@@ -44,6 +44,9 @@ npm run preview  # 预览构建结果
 | 25 | ADC采样量化器 | 📋 STM32 | 🟡 进阶 | 分辨率/Vref/采样时间 | 输入超Vref → 饱和 / 位数低 → 精度差 |
 | 26 | PCB地平面回流 | 🎨 PCB | 🟡 进阶 | 频率/走线长/地平面类型/开槽 | 开槽 → EMI超标 / 分割 → 跨岛 |
 | 27 | 示波器探头补偿 | 🐛 调试 | 🟡 进阶 | 衰减比/补偿系数/方波频率 | 欠补偿 → 圆角 / 过补偿 → 尖峰 |
+| 28 | BLE蓝牙链路预算 | 📡 无线 | 🟡 进阶 | 发射功率/距离/频率/障碍物 | RSSI低于灵敏度 → 连接断开 |
+| 29 | RS-485差分总线 | 🔗 通信 | 🟡 进阶 | 波特率/线长/终端电阻/节点 | 无终端电阻 → 信号反射振铃 |
+| 30 | Sallen-Key有源滤波 | 〰️ 信号 | 🔴 高级 | R/C/Q值/输入频率滑块 | Q值过高 → 谐振峰/自激 |
 
 ## 架构
 
@@ -62,15 +65,15 @@ components/       Vue3 UI组件
   ErrorPopup.vue        错误教学弹窗
   SmokeAnimation.vue    烧毁冒烟动画
   PwmLoadView.vue       PWM负载可视化
-  + 12个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖/LDO/555/ESD/UART/光敏/LC带通/MOSFET/继电器/R2R-DAC）
+  + 15个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖/LDO/555/ESD/UART/光敏/LC带通/MOSFET/继电器/R2R-DAC/ADC/地平面/探头/BLE/RS485/Sallen-Key）
 stores/           Pinia状态管理
   experiment.js   实验状态+仿真调度
-  progress.js     进度持久化+成就系统（8个成就/24实验）
+  progress.js     进度持久化+成就系统（8个成就/30实验）
   favorites.js    收藏+最近浏览（localStorage）
 data/             知识点+提示+挑战数据
-  knowledge.js    27个实验核心公式/概念/提示
-  hints.js        27个实验3级渐进提示
-  challenges.js   27个实验挑战模式配置（目标/约束/计时/评分）
+  knowledge.js    30个实验核心公式/概念/提示
+  hints.js        30个实验3级渐进提示
+  challenges.js   30个实验挑战模式配置（目标/约束/计时/评分）
 ```
 
 ## 进度与成就系统

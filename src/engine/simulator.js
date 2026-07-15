@@ -245,7 +245,10 @@ export class Simulator {
       'r2r-dac': () => this._simulateR2RDAC(comp),
       'adc-sampling': () => this._simulateADC(comp),
       'pcb-ground-loop': () => this._simulatePcbGroundLoop(comp),
-      'oscilloscope-probe': () => this._simulateOscilloscopeProbe(comp)
+      'oscilloscope-probe': () => this._simulateOscilloscopeProbe(comp),
+      'ble-link': () => this._simulateBLELink(comp),
+      'rs485-bus': () => this._simulateRS485(comp),
+      'sallen-key-filter': () => this._simulateSallenKey(comp)
     }
 
     const handler = handlers[comp.type]
@@ -2149,6 +2152,235 @@ export class Simulator {
       result.error = 'PROBE_1X_HIGH_FREQ'
       result.errorTitle = '1x探头测高频信号！带宽不足 ⚠️'
       result.errorExplanation = `1x探头输入电容约${cableCap}pF，带宽仅约6MHz。\n测量${signalFreq}Hz信号时波形严重畸变。\n高频测量请切换10x探头（带宽可达100MHz+）。`
+    }
+
+    return result
+  }
+
+  /**
+   * BLE蓝牙链路预算仿真
+   * FSPL = 20log10(d) + 20log10(f_MHz) + 27.55
+   */
+  _simulateBLELink(comp) {
+    const txPower = this._getParam(comp, 'bleTxPower', 0)       // dBm
+    const distance = this._getParam(comp, 'bleDistance', 5)      // meters
+    const freq = this._getParam(comp, 'bleFreq', 2402)            // MHz
+    const obstacle = this._getParam(comp, 'bleObstacle', 'none')
+    const txGain = 0    // dBi (default BLE chip antenna)
+    const rxGain = 0
+    const rxSensitivity = -90  // dBm, typical BLE receiver
+
+    // Free Space Path Loss (FSPL) in dB
+    const fspl = 20 * Math.log10(Math.max(0.1, distance)) + 20 * Math.log10(freq) + 27.55
+
+    // Obstacle attenuation (dB)
+    const obstacleMap = { none: 0, body: 8, wall: 15, pocket: 5 }
+    const obstacleNames = { none: '空旷', body: '人体', wall: '墙壁', pocket: '口袋' }
+    const obstacleLoss = obstacleMap[obstacle] || 0
+
+    // RSSI = TxPower + TxGain + RxGain - FSPL - ObstacleLoss
+    const rssi = txPower + txGain + rxGain - fspl - obstacleLoss
+
+    // Link margin
+    const margin = rssi - rxSensitivity
+
+    // Maximum distance (margin = 0)
+    // 0 = txPower + gains - 20log10(dmax) - 20log10(f) - 27.55 - obstacleLoss
+    // 20log10(dmax) = txPower + gains - 20log10(f) - 27.55 - obstacleLoss
+    const totalGain = txPower + txGain + rxGain - 20 * Math.log10(freq) - 27.55 - obstacleLoss - rxSensitivity
+    const maxDistance = Math.pow(10, totalGain / 20)
+
+    // Quality classification
+    let quality
+    if (rssi >= -60) quality = 'excellent'
+    else if (rssi >= -70) quality = 'good'
+    else if (rssi >= -80) quality = 'fair'
+    else if (rssi >= rxSensitivity) quality = 'poor'
+    else quality = 'none'
+
+    // Quality percentage for the bar (0dBm = 100%, -100dBm = 0%)
+    const qualityPct = Math.max(0, Math.min(100, (rssi + 100) / 100 * 100))
+
+    const result = {
+      txPower, txGain, rxGain, fspl: fspl.toFixed(1),
+      obstacleLoss, obstacleName: obstacleNames[obstacle] || obstacle,
+      rssi: parseFloat(rssi.toFixed(1)),
+      rxSensitivity, margin: parseFloat(margin.toFixed(1)),
+      maxDistance: Math.max(0.1, maxDistance),
+      quality, qualityPct: parseFloat(qualityPct.toFixed(1)),
+      freq, distance,
+      loadState: 'running'
+    }
+
+    if (rssi < rxSensitivity) {
+      result.error = 'BLE_SIGNAL_TOO_WEAK'
+      result.errorTitle = '信号太弱！连接断开 ⚠️'
+      result.errorExplanation = `接收信号强度 ${rssi.toFixed(1)}dBm 低于BLE灵敏度 ${rxSensitivity}dBm。\n2.4GHz信号被障碍物吸收/反射，链路预算不足。\n缩短距离、消除遮挡、或增大发射功率。`
+    }
+
+    return result
+  }
+
+  /**
+   * RS-485差分总线仿真
+   * 最大线缆长度 ≈ 10^7 / baudrate
+   */
+  _simulateRS485(comp) {
+    const baudrate = this._getParam(comp, 'rsBaudrate', 9600)
+    const cableLength = this._getParam(comp, 'rsCableLength', 30)
+    const hasTerminator = this._getParam(comp, 'rsTerminator', true)
+    const nodeCount = this._getParam(comp, 'rsNodeCount', 4)
+
+    // Max cable length: 10^7 / baudrate (m·bps guideline)
+    const maxCableLength = Math.round(Math.min(1200, 10000000 / baudrate))
+
+    // Propagation delay: ~5ns/m for twisted pair
+    const propDelay = cableLength * 5 // ns
+
+    // Unit load: each node = 1 UL, max 32 UL
+    const unitLoad = nodeCount
+
+    // Signal rise time ≈ 0.3 / baudrate (s)
+    const riseTime = 0.3 / baudrate * 1e9 // ns
+
+    // Critical length: if cable < rise_time * v / 2, no termination needed
+    // v = 0.67c ≈ 2e8 m/s
+    const criticalLength = riseTime * 1e-9 * 2e8 / 2
+
+    // Eye diagram quality
+    let eyeQuality = 100
+    let ringing = false
+
+    if (!hasTerminator && cableLength > criticalLength) {
+      // Reflection causes ringing
+      ringing = true
+      const reflectionSeverity = Math.min(80, (cableLength / criticalLength) * 30)
+      eyeQuality = Math.max(0, 100 - reflectionSeverity)
+    }
+
+    if (cableLength > maxCableLength) {
+      eyeQuality = Math.max(0, eyeQuality - 40)
+    }
+
+    if (unitLoad > 32) {
+      eyeQuality = Math.max(0, eyeQuality - 20)
+    }
+
+    // High baudrate degrades signal
+    if (baudrate > 1000000) {
+      eyeQuality = Math.max(0, eyeQuality - 15)
+    }
+
+    eyeQuality = Math.round(Math.max(0, Math.min(100, eyeQuality)))
+
+    const result = {
+      baudrate, cableLength, hasTerminator, nodeCount,
+      maxCableLength, propDelay, unitLoad,
+      riseTime: riseTime.toFixed(1),
+      eyeQuality, ringing,
+      criticalLength: criticalLength.toFixed(1),
+      loadState: 'running'
+    }
+
+    if (!hasTerminator && baudrate > 115200) {
+      result.error = 'RS485_NO_TERMINATION'
+      result.errorTitle = '无终端电阻！信号反射严重 ⚠️'
+      result.errorExplanation = `波特率 ${baudrate} bps 下无终端电阻。\n信号到达线缆末端被反射，产生振铃。\nRS-485必须在总线两端各加120Ω终端电阻。`
+    } else if (cableLength > maxCableLength * 1.5) {
+      result.error = 'RS485_CABLE_TOO_LONG'
+      result.errorTitle = '线缆过长！信号严重衰减 ⚠️'
+      result.errorExplanation = `${cableLength}m线缆在${baudrate}bps下严重衰减。\n最大建议长度为${maxCableLength}m。\n降低波特率或缩短线缆。`
+    } else if (unitLoad > 32) {
+      result.error = 'RS485_TOO_MANY_NODES'
+      result.errorTitle = '节点过多！总线过载 ⚠️'
+      result.errorExplanation = `RS-485最多支持32个单位负载(UL)。\n当前负载为${unitLoad}UL。\n使用低负载收发器(1/4UL/1/8UL)或减少节点数。`
+    }
+
+    return result
+  }
+
+  /**
+   * Sallen-Key有源二阶低通滤波器仿真
+   * fc = 1/(2*pi*R*C), Q depends on gain K: Q = 1/(3-K)
+   */
+  _simulateSallenKey(comp) {
+    const R = this._getParam(comp, 'skR', 10000)     // Ohms
+    const C = this._getParam(comp, 'skC', 10)         // nF
+    const Q = this._getParam(comp, 'skQ', 0.707)      // Quality factor
+    const inputFreq = this._getParam(comp, 'skFreq', 100) // Hz
+
+    const C_F = C * 1e-9 // Convert nF to F
+
+    // Cutoff frequency
+    const fc = 1 / (2 * Math.PI * R * C_F)
+
+    // Sallen-Key gain from Q: K = 3 - 1/Q
+    const K = 3 - 1 / Q
+
+    // Transfer function magnitude at input frequency
+    // H(jw) = K / (1 - (w/wc)^2 + j*(w/wc)/Q)
+    const w = 2 * Math.PI * inputFreq
+    const wc = 2 * Math.PI * fc
+    const ratio = wc > 0 ? w / wc : 1
+    const denomReal = 1 - ratio * ratio
+    const denomImag = ratio / Q
+    const denomMag = Math.sqrt(denomReal * denomReal + denomImag * denomImag)
+    const gain = denomMag > 0 ? K / denomMag : 0
+    const gainDb = 20 * Math.log10(Math.max(0.0001, gain))
+
+    // Peak gain at resonance (if Q > 0.707)
+    let gainPeak = 0
+    if (Q > 0.707) {
+      gainPeak = Q * K / Math.sqrt(1 - 1 / (4 * Q * Q))
+    }
+
+    // Attenuation rate: -40dB/decade for 2nd order
+    const attenuationDb = -40
+
+    // Generate frequency response curve (log scale: 10Hz to 1MHz)
+    const responseCurve = []
+    const fMin = 10, fMax = 1000000
+    const steps = 60
+    for (let i = 0; i <= steps; i++) {
+      const f = fMin * Math.pow(fMax / fMin, i / steps)
+      const w_i = 2 * Math.PI * f
+      const r = fc > 0 ? w_i / (2 * Math.PI * fc) : 1
+      const dr = 1 - r * r
+      const di = r / Q
+      const dm = Math.sqrt(dr * dr + di * di)
+      const g = dm > 0 ? K / dm : 0
+      responseCurve.push({ f, gain: g })
+    }
+
+    // Generate input/output waveforms (sine wave, 2 cycles)
+    const inputCurve = []
+    const outputCurve = []
+    const N = 100
+    for (let i = 0; i < N; i++) {
+      const t = i / N * 2 * Math.PI
+      const vIn = Math.sin(t)
+      const vOut = vIn * gain
+      inputCurve.push({ t, v: vIn })
+      outputCurve.push({ t, v: vOut })
+    }
+
+    const result = {
+      R, C, Q: parseFloat(Q.toFixed(3)),
+      fc: parseFloat(fc.toFixed(1)),
+      K: parseFloat(K.toFixed(3)),
+      inputFreq,
+      gain: parseFloat(gain.toFixed(4)),
+      gainDb: parseFloat(gainDb.toFixed(1)),
+      gainPeak: parseFloat(gainPeak.toFixed(2)),
+      attenuationDb,
+      responseCurve, inputCurve, outputCurve,
+      loadState: 'running'
+    }
+
+    if (Q > 2 && gainPeak > 3) {
+      result.error = 'SK_Q_TOO_HIGH'
+      result.errorTitle = 'Q值过高！通带内出现谐振峰 ⚠️'
+      result.errorExplanation = `Q=${Q.toFixed(2)}导致截止频率附近增益 peaked 到 ${gainPeak.toFixed(1)}。\n高Q值使滤波器在fc附近产生谐振尖峰，甚至可能自激振荡。\nButterworth响应Q=0.707是最平坦通带。`
     }
 
     return result

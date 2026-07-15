@@ -846,6 +846,66 @@
           </span>
         </div>
       </div>
+      <div v-else-if="currentExpId === 'ble-link-budget'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <BLELinkView
+          :simResult="store.simResult?.results?.BLE1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'rs485-bus'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <RS485BusView
+          :simResult="store.simResult?.results?.RS1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'sallen-key-filter'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <SallenKeyView
+          :simResult="store.simResult?.results?.SK1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -944,6 +1004,9 @@ import R2RDACView from './components/R2RDACView.vue'
 import ADCSamplingView from './components/ADCSamplingView.vue'
 import PcbGroundLoopView from './components/PcbGroundLoopView.vue'
 import OscilloscopeProbeView from './components/OscilloscopeProbeView.vue'
+import BLELinkView from './components/BLELinkView.vue'
+import RS485BusView from './components/RS485BusView.vue'
+import SallenKeyView from './components/SallenKeyView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -984,6 +1047,9 @@ import r2rDacConfig from './experiments/r2r-dac.json'
 import adcSamplingConfig from './experiments/adc-sampling.json'
 import pcbGroundLoopConfig from './experiments/pcb-ground-loop.json'
 import oscilloscopeProbeConfig from './experiments/oscilloscope-probe.json'
+import bleLinkConfig from './experiments/ble-link-budget.json'
+import rs485BusConfig from './experiments/rs485-bus.json'
+import sallenKeyConfig from './experiments/sallen-key-filter.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -1018,7 +1084,10 @@ const allExperiments = [
   { id: 'r2r-dac', icon: '📊', shortTitle: 'R-2R DAC', desc: '数字转模拟电压', config: r2rDacConfig, difficulty: 'advanced' },
   { id: 'adc-sampling', icon: '📋', shortTitle: 'ADC采样', desc: '量化误差/SNR/采样保持', config: adcSamplingConfig, difficulty: 'intermediate' },
   { id: 'pcb-ground-loop', icon: '🎨', shortTitle: '地平面回流', desc: 'EMI/回流路径/环路面积', config: pcbGroundLoopConfig, difficulty: 'intermediate' },
-  { id: 'oscilloscope-probe', icon: '🐛', shortTitle: '探头补偿', desc: '欠/过补偿/10x带宽', config: oscilloscopeProbeConfig, difficulty: 'intermediate' }
+  { id: 'oscilloscope-probe', icon: '🐛', shortTitle: '探头补偿', desc: '欠/过补偿/10x带宽', config: oscilloscopeProbeConfig, difficulty: 'intermediate' },
+  { id: 'ble-link-budget', icon: '📡', shortTitle: 'BLE蓝牙链路', desc: '2.4GHz传播/人体衰减', config: bleLinkConfig, difficulty: 'intermediate' },
+  { id: 'rs485-bus', icon: '🔗', shortTitle: 'RS-485总线', desc: '终端电阻/信号完整性', config: rs485BusConfig, difficulty: 'intermediate' },
+  { id: 'sallen-key-filter', icon: '〰️', shortTitle: 'Sallen-Key滤波', desc: '有源二阶/Q值/频率响应', config: sallenKeyConfig, difficulty: 'advanced' }
 ]
 
 const categories = [
