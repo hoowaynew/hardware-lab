@@ -205,4 +205,9 @@ function formatR(ohms) {
   font-family: monospace;
 }
 .vd-power-warn { color: var(--warning); }
+.vd-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

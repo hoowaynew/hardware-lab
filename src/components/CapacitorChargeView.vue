@@ -230,4 +230,9 @@ const chargePercent = computed(() => {
   color: var(--text-dim);
   font-family: monospace;
 }
+.cc-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

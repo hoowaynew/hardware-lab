@@ -221,4 +221,9 @@ const gaugePercent = computed(() => {
   color: var(--primary);
   font-family: monospace;
 }
+.pcb-cross-section {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

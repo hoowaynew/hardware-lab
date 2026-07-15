@@ -295,4 +295,9 @@ const sclPoints = computed(() => {
 }
 .bit-label { color: var(--text-dim); }
 .bit-value { color: var(--primary); font-weight: 600; letter-spacing: 1px; }
+.i2c-topology {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

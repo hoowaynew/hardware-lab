@@ -187,4 +187,9 @@ const sensitivityPercent = computed(() => {
 .ble-b-ok { color: var(--success); }
 .ble-budget-divider { height: 1px; background: var(--border); margin: 4px 0; }
 .ble-budget-total .ble-b-value { font-size: 18px; }
+.ble-topology {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

@@ -258,4 +258,9 @@ const rWarn = computed(() => {
   font-family: monospace;
 }
 .ntc-good-res { color: var(--success); }
+.ntc-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

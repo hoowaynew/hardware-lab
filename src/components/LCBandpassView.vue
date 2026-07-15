@@ -342,4 +342,9 @@ const statusText = computed(() => {
   font-family: monospace;
 }
 .lc-at-resonance { color: var(--success); }
+.lc-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

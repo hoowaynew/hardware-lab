@@ -250,4 +250,9 @@ const channels = computed(() => {
   font-family: monospace;
   justify-content: center;
 }
+.la-topology {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

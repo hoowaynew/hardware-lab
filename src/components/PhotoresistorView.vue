@@ -275,4 +275,9 @@ const lightLevel = computed(() => {
   font-family: monospace;
 }
 .photo-good-res { color: var(--success); }
+.photo-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

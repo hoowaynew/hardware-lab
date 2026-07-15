@@ -240,4 +240,9 @@ const statusText = computed(() => {
 .rf-filtering {
   color: var(--success);
 }
+.rf-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

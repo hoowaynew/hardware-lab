@@ -284,4 +284,9 @@ const sensitivityPercent = computed(() => {
 .wifi-budget-total .wifi-b-value {
   font-size: 18px;
 }
+.wifi-topology {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

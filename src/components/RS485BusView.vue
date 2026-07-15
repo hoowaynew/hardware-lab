@@ -238,4 +238,9 @@ const wavePoints = computed(() => {
 .rs485-over { color: var(--warning); }
 .rs485-diff { background: var(--surface-light); border-radius: 8px; padding: 8px 12px; }
 .rs485-diff-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.rs485-topology {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>

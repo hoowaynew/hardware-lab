@@ -250,4 +250,9 @@ const outputWavePoints = computed(() => {
 .sk-svg { display: block; }
 .sk-waveforms { background: var(--surface-light); border-radius: 8px; padding: 8px 12px; }
 .sk-wave-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+.sk-circuit {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+}
 </style>
