@@ -4,6 +4,78 @@
       <span class="formula-text">L_max ≈ 10⁷ / Baudrate (m·bps) · Z_term = Z₀ = 120Ω</span>
     </div>
 
+    <!-- RS-485 总线拓扑图 -->
+    <svg class="rs485-topology" viewBox="0 0 360 130">
+      <!-- 差分总线 A/B 双线 -->
+      <line x1="40" y1="45" x2="320" y2="45" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="40" y1="65" x2="320" y2="65" stroke="var(--wire)" stroke-width="2"/>
+      <text x="10" y="48" fill="var(--text-dim)" font-size="9">A</text>
+      <text x="10" y="68" fill="var(--text-dim)" font-size="9">B</text>
+
+      <!-- 节点1: Master -->
+      <rect x="45" y="25" width="50" height="60" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="52" y="42" fill="var(--text)" font-size="8">Master</text>
+      <text x="52" y="52" fill="var(--text-dim)" font-size="7">MCU</text>
+      <!-- 收发器 -->
+      <rect x="50" y="56" width="40" height="22" rx="2" fill="none" stroke="#8e44ad" stroke-width="1"/>
+      <text x="55" y="68" fill="#8e44ad" font-size="7">RS485</text>
+      <text x="55" y="75" fill="#8e44ad" font-size="7">IC</text>
+      <!-- Master → A/B 连线 -->
+      <line x1="70" y1="56" x2="70" y2="45" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="78" y1="78" x2="78" y2="65" stroke="var(--wire)" stroke-width="1.5"/>
+      <circle cx="70" cy="45" r="2.5" fill="var(--wire)"/>
+      <circle cx="78" cy="65" r="2.5" fill="var(--wire)"/>
+
+      <!-- 节点2: Slave 1 -->
+      <rect x="145" y="25" width="50" height="60" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="150" y="42" fill="var(--text)" font-size="8">Slave 1</text>
+      <text x="150" y="52" fill="var(--text-dim)" font-size="7">Sensor</text>
+      <rect x="150" y="56" width="40" height="22" rx="2" fill="none" stroke="#8e44ad" stroke-width="1"/>
+      <text x="155" y="68" fill="#8e44ad" font-size="7">RS485</text>
+      <text x="155" y="75" fill="#8e44ad" font-size="7">IC</text>
+      <line x1="170" y1="56" x2="170" y2="45" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="178" y1="78" x2="178" y2="65" stroke="var(--wire)" stroke-width="1.5"/>
+      <circle cx="170" cy="45" r="2.5" fill="var(--wire)"/>
+      <circle cx="178" cy="65" r="2.5" fill="var(--wire)"/>
+
+      <!-- 节点3: Slave 2 -->
+      <rect x="245" y="25" width="50" height="60" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="250" y="42" fill="var(--text)" font-size="8">Slave 2</text>
+      <text x="250" y="52" fill="var(--text-dim)" font-size="7">Sensor</text>
+      <rect x="250" y="56" width="40" height="22" rx="2" fill="none" stroke="#8e44ad" stroke-width="1"/>
+      <text x="255" y="68" fill="#8e44ad" font-size="7">RS485</text>
+      <text x="255" y="75" fill="#8e44ad" font-size="7">IC</text>
+      <line x1="270" y1="56" x2="270" y2="45" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="278" y1="78" x2="278" y2="65" stroke="var(--wire)" stroke-width="1.5"/>
+      <circle cx="270" cy="45" r="2.5" fill="var(--wire)"/>
+      <circle cx="278" cy="65" r="2.5" fill="var(--wire)"/>
+
+      <!-- 终端电阻 RT1 (左端) -->
+      <path d="M40,45 h3 l3,-5 l6,10 l6,-10 l6,10 l6,-10 l3,5 h3" fill="none" stroke="#e74c3c" stroke-width="1.5" transform="translate(-5,0) rotate(90 40 55)"/>
+      <text x="20" y="100" fill="#e74c3c" font-size="8">RT1</text>
+      <text x="20" y="110" fill="#e74c3c" font-size="7">120Ω</text>
+
+      <!-- 终端电阻 RT2 (右端) -->
+      <line x1="320" y1="45" x2="320" y2="65" stroke="#e74c3c" stroke-width="2"/>
+      <path d="M320,55 h3 l3,-5 l6,10 l6,-10 l6,10 l6,-10 l3,5 h3" fill="none" stroke="#e74c3c" stroke-width="1.5" transform="translate(0,-10)"/>
+      <text x="330" y="55" fill="#e74c3c" font-size="8">RT2</text>
+      <text x="330" y="65" fill="#e74c3c" font-size="7">120Ω</text>
+
+      <!-- GND -->
+      <line x1="70" y1="85" x2="70" y2="105" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="170" y1="85" x2="170" y2="105" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="270" y1="85" x2="270" y2="105" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="70" y1="105" x2="270" y2="105" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="155" y1="105" x2="185" y2="105" stroke="var(--text)" stroke-width="2.5"/>
+      <line x1="160" y1="109" x2="180" y2="109" stroke="var(--text)" stroke-width="2"/>
+      <line x1="165" y1="113" x2="175" y2="113" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="190" y="111" fill="var(--text-dim)" font-size="8">GND</text>
+
+      <!-- 线缆标注 -->
+      <text x="95" y="40" fill="var(--text-dim)" font-size="7">twisted pair</text>
+      <text x="95" y="80" fill="var(--text-dim)" font-size="7">Z₀=120Ω</text>
+    </svg>
+
     <!-- Signal quality -->
     <div class="rs485-status">
       <div class="rs485-status-value" :class="statusClass">

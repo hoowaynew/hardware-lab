@@ -47,11 +47,18 @@
         </text>
       </g>
 
-      <!-- 运放/缓冲器 (输出) -->
+      <!-- 运放/缓冲器 (输出, ANSI标准三角形) -->
       <g>
-        <polygon points="320,140 310,150 320,160 330,150" fill="none" stroke="var(--wire)" stroke-width="1.5"/>
-        <text x="320" y="155" text-anchor="middle" fill="#888" font-size="8">A</text>
+        <path d="M315,140 L315,160 L335,150 Z" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+        <text x="318" y="148" fill="var(--text-dim)" font-size="7">+</text>
+        <text x="318" y="158" fill="var(--text-dim)" font-size="7">−</text>
+        <text x="338" y="154" fill="var(--text-dim)" font-size="8">A</text>
         <line x1="320" y1="60" x2="320" y2="140" stroke="var(--wire)" stroke-width="1.5" stroke-dasharray="2,2"/>
+        <!-- 反馈线 (电压跟随器: Vout → −输入) -->
+        <line x1="335" y1="150" x2="345" y2="150" stroke="var(--accent)" stroke-width="2"/>
+        <line x1="335" y1="158" x2="310" y2="158" stroke="var(--wire)" stroke-width="1.5"/>
+        <line x1="310" y1="158" x2="310" y2="150" stroke="var(--wire)" stroke-width="1.5"/>
+        <line x1="310" y1="150" x2="315" y2="150" stroke="var(--wire)" stroke-width="1.5"/>
       </g>
 
       <!-- 输出 -->

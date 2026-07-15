@@ -3,6 +3,53 @@
     <div class="vd-formula">
       <span class="formula-text">Vout = Vin × R2 / (R1 + R2)</span>
     </div>
+
+    <!-- 电路原理图 -->
+    <svg class="vd-circuit" viewBox="0 0 320 160">
+      <!-- Vin 电源 -->
+      <text x="45" y="14" fill="var(--text-dim)" font-size="10">Vin = {{ vin }}V</text>
+      <line x1="80" y1="20" x2="80" y2="30" stroke="var(--wire)" stroke-width="2"/>
+      <text x="70" y="28" fill="var(--text-dim)" font-size="8">+</text>
+
+      <!-- 导线 Vin → R1 -->
+      <line x1="80" y1="30" x2="80" y2="35" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R1 电阻 (ANSI zigzag) -->
+      <path d="M80,35 v3 l-5,3 l10,6 l-10,6 l10,6 l-10,6 l5,3 v3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="100" y="58" fill="#e67e22" font-size="10">R1 = {{ formatR(r1) }}</text>
+
+      <!-- 导线 R1 → Vout节点 -->
+      <line x1="80" y1="74" x2="80" y2="85" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- Vout 抽取节点 (junction dot) -->
+      <circle cx="80" cy="85" r="3" fill="var(--wire)"/>
+
+      <!-- Vout 输出连线 -->
+      <line x1="80" y1="85" x2="180" y2="85" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="180" cy="85" r="3" fill="var(--accent)"/>
+      <text x="188" y="89" fill="var(--accent)" font-size="11" font-weight="bold">Vout = {{ vout.toFixed(2) }}V</text>
+
+      <!-- 导线 Vout节点 → R2 -->
+      <line x1="80" y1="85" x2="80" y2="90" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R2 电阻 (ANSI zigzag) -->
+      <path d="M80,90 v3 l-5,3 l10,6 l-10,6 l10,6 l-10,6 l5,3 v3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="100" y="115" fill="#e67e22" font-size="10">R2 = {{ formatR(r2) }}</text>
+
+      <!-- 导线 R2 → GND -->
+      <line x1="80" y1="129" x2="80" y2="138" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 接地符号 -->
+      <line x1="72" y1="138" x2="88" y2="138" stroke="var(--wire)" stroke-width="2.5"/>
+      <line x1="75" y1="142" x2="85" y2="142" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="78" y1="146" x2="82" y2="146" stroke="var(--wire)" stroke-width="1.5"/>
+      <text x="95" y="143" fill="var(--text-dim)" font-size="9">GND</text>
+
+      <!-- 电流方向标注 -->
+      <text x="60" y="58" fill="var(--text-dim)" font-size="8">I = {{ current.toFixed(2) }}mA</text>
+      <path d="M65,63 L65,120" fill="none" stroke="var(--text-dim)" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.3"/>
+    </svg>
+
     <div class="vd-result">
       <div class="vd-value" :class="{ 'vd-warn': isOvervoltage }">
         <span class="vd-label">Vout</span>

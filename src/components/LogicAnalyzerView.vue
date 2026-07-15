@@ -44,6 +44,50 @@
       </div>
     </div>
 
+    <!-- SPI总线拓扑图 -->
+    <svg class="la-topology" viewBox="0 0 340 120">
+      <!-- Master (MCU) -->
+      <rect x="20" y="30" width="70" height="60" rx="4" fill="var(--card-bg)" stroke="var(--accent)" stroke-width="2"/>
+      <text x="55" y="55" text-anchor="middle" fill="var(--accent)" font-size="10" font-weight="bold">Master</text>
+      <text x="55" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="8">MCU</text>
+      <text x="55" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="7">Mode {{ mode }}</text>
+
+      <!-- Slave -->
+      <rect x="250" y="30" width="70" height="60" rx="4" fill="var(--card-bg)" stroke="var(--wire)" stroke-width="2"/>
+      <text x="285" y="55" text-anchor="middle" fill="var(--text-dim)" font-size="10" font-weight="bold">Slave</text>
+      <text x="285" y="70" text-anchor="middle" fill="var(--text-dim)" font-size="8">Device</text>
+      <text x="285" y="82" text-anchor="middle" fill="var(--text-dim)" font-size="7">Mode 0</text>
+
+      <!-- SCLK (时钟线) -->
+      <line x1="90" y1="38" x2="250" y2="38" stroke="#e74c3c" stroke-width="1.5"/>
+      <circle cx="90" cy="38" r="2.5" fill="#e74c3c"/>
+      <circle cx="250" cy="38" r="2.5" fill="#e74c3c"/>
+      <text x="170" y="32" text-anchor="middle" fill="#e74c3c" font-size="8">SCLK ({{ clockFreq }}kHz)</text>
+
+      <!-- MOSI (主出从入) -->
+      <line x1="90" y1="52" x2="250" y2="52" stroke="#2ecc71" stroke-width="1.5"/>
+      <circle cx="90" cy="52" r="2.5" fill="#2ecc71"/>
+      <circle cx="250" cy="52" r="2.5" fill="#2ecc71"/>
+      <text x="170" y="49" text-anchor="middle" fill="#2ecc71" font-size="8">MOSI</text>
+      <path d="M220,49 L228,52 L220,55" fill="none" stroke="#2ecc71" stroke-width="1"/>
+
+      <!-- MISO (主入从出) -->
+      <line x1="90" y1="66" x2="250" y2="66" stroke="#3498db" stroke-width="1.5"/>
+      <circle cx="90" cy="66" r="2.5" fill="#3498db"/>
+      <circle cx="250" cy="66" r="2.5" fill="#3498db"/>
+      <text x="170" y="63" text-anchor="middle" fill="#3498db" font-size="8">MISO</text>
+      <path d="M120,63 L112,66 L120,69" fill="none" stroke="#3498db" stroke-width="1"/>
+
+      <!-- CS (片选) -->
+      <line x1="90" y1="80" x2="250" y2="80" stroke="#f39c12" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <circle cx="90" cy="80" r="2.5" fill="#f39c12"/>
+      <circle cx="250" cy="80" r="2.5" fill="#f39c12"/>
+      <text x="170" y="93" text-anchor="middle" fill="#f39c12" font-size="8">CS (低有效)</text>
+
+      <!-- 模式冲突警告 -->
+      <text v-if="modeMismatch" x="170" y="110" text-anchor="middle" fill="var(--danger)" font-size="9" font-weight="bold">⚠ Mode不匹配!</text>
+    </svg>
+
     <!-- 时钟信息 -->
     <div class="la-clock-info">
       <span>时钟: {{ clockFreq }} kHz</span>

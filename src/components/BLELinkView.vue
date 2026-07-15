@@ -4,6 +4,51 @@
       <span class="formula-text">FSPL = 20log₁₀(d) + 20log₁₀(f_MHz) + 27.55</span>
     </div>
 
+    <!-- BLE 链路拓扑图 -->
+    <svg class="ble-topology" viewBox="0 0 360 120">
+      <!-- TX 节点 -->
+      <rect x="20" y="30" width="55" height="50" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="28" y="45" fill="var(--text)" font-size="9">TX</text>
+      <text x="25" y="55" fill="var(--text-dim)" font-size="7">Master</text>
+      <text x="25" y="65" fill="var(--text-dim)" font-size="7">BLE</text>
+      <!-- TX 天线 -->
+      <line x1="47" y1="30" x2="47" y2="15" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="42" y1="15" x2="52" y2="15" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="44" y1="18" x2="50" y2="18" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="46" y1="21" x2="48" y2="21" stroke="var(--wire)" stroke-width="1"/>
+      <text x="55" y="18" fill="var(--text-dim)" font-size="7">Ant</text>
+      <text x="55" y="27" fill="var(--text-dim)" font-size="7">{{ txGain }}dBi</text>
+
+      <!-- 电磁波 (波纹线) -->
+      <path d="M55,20 q8,-6 16,0 q8,6 16,0 q8,-6 16,0 q8,6 16,0" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.7"/>
+      <!-- 障碍物 -->
+      <rect v-if="obstacleLoss > 0" x="140" y="5" width="30" height="30" fill="none" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <text v-if="obstacleLoss > 0" x="143" y="48" fill="#e74c3c" font-size="7">{{ obstacleName }}</text>
+      <text v-if="obstacleLoss > 0" x="143" y="56" fill="#e74c3c" font-size="7">-{{ obstacleLoss }}dB</text>
+
+      <!-- 距离标注 -->
+      <text x="155" y="68" fill="var(--text-dim)" font-size="8">d = {{ distance }}m</text>
+      <text x="155" y="78" fill="var(--text-dim)" font-size="7">2.4GHz ISM</text>
+
+      <!-- 继续波纹 -->
+      <path d="M180,20 q8,-6 16,0 q8,6 16,0 q8,-6 16,0" fill="none" stroke="var(--accent)" stroke-width="1.5" opacity="0.7"/>
+
+      <!-- RX 节点 -->
+      <rect x="285" y="30" width="55" height="50" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="293" y="45" fill="var(--text)" font-size="9">RX</text>
+      <text x="290" y="55" fill="var(--text-dim)" font-size="7">Slave</text>
+      <text x="290" y="65" fill="var(--text-dim)" font-size="7">BLE</text>
+      <!-- RX 天线 -->
+      <line x1="312" y1="30" x2="312" y2="15" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="307" y1="15" x2="317" y2="15" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="309" y1="18" x2="315" y2="18" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="311" y1="21" x2="313" y2="21" stroke="var(--wire)" stroke-width="1"/>
+      <text x="272" y="18" fill="var(--text-dim)" font-size="7">{{ rxGain }}dBi</text>
+
+      <!-- 链路预算标注 -->
+      <text x="100" y="100" fill="var(--text-dim)" font-size="8">P_tx = {{ txPower }}dBm → FSPL = -{{ fspl }}dB → RSSI = {{ rssi }}dBm</text>
+    </svg>
+
     <!-- RSSI display -->
     <div class="ble-rssi-display">
       <div class="ble-rssi-value" :class="rssiClass">
@@ -82,6 +127,7 @@ const obstacleName = computed(() => props.simResult?.obstacleName ?? '')
 const margin = computed(() => props.simResult?.margin ?? 0)
 const qualityPct = computed(() => props.simResult?.qualityPct ?? 0)
 const maxDistance = computed(() => props.simResult?.maxDistance?.toFixed(1) ?? '—')
+const distance = computed(() => props.simResult?.distance ?? 10)
 
 const rssiClass = computed(() => {
   const q = props.simResult?.quality

@@ -18,6 +18,51 @@
       </div>
     </div>
 
+    <!-- 电路原理图 -->
+    <svg class="lc-circuit" viewBox="0 0 320 130">
+      <!-- Vin 输入 -->
+      <text x="10" y="22" fill="var(--text-dim)" font-size="10">Vin</text>
+      <circle cx="40" cy="35" r="3" fill="var(--wire)"/>
+      <line x1="40" y1="35" x2="55" y2="35" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- L 电感 (线圈符号, 水平) -->
+      <path d="M55,35 q4,-7 8,0 q4,-7 8,0 q4,-7 8,0" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="62" y="25" fill="#e67e22" font-size="10">L</text>
+
+      <!-- 导线 L → 节点 -->
+      <line x1="79" y1="35" x2="110" y2="35" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- Vout 节点 -->
+      <circle cx="110" cy="35" r="3" fill="var(--wire)"/>
+      <line x1="110" y1="35" x2="200" y2="35" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="200" cy="35" r="3" fill="var(--accent)"/>
+      <text x="208" y="39" fill="var(--accent)" font-size="11" font-weight="bold">Vout</text>
+
+      <!-- 节点 → C (并联到GND) -->
+      <line x1="110" y1="35" x2="110" y2="48" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- C 电容 -->
+      <line x1="102" y1="48" x2="118" y2="48" stroke="#3498db" stroke-width="2.5"/>
+      <line x1="102" y1="54" x2="118" y2="54" stroke="#3498db" stroke-width="2.5"/>
+      <text x="125" y="53" fill="#3498db" font-size="10">C</text>
+
+      <!-- 导线 C → GND -->
+      <line x1="110" y1="54" x2="110" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- GND 回路 -->
+      <line x1="40" y1="75" x2="110" y2="75" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="40" y1="35" x2="40" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 接地符号 -->
+      <line x1="62" y1="75" x2="78" y2="75" stroke="var(--wire)" stroke-width="2.5"/>
+      <line x1="65" y1="79" x2="75" y2="79" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="68" y1="83" x2="72" y2="83" stroke="var(--wire)" stroke-width="1.5"/>
+      <text x="85" y="81" fill="var(--text-dim)" font-size="9">GND</text>
+
+      <!-- 谐振频率标注 -->
+      <text x="120" y="105" fill="var(--text-dim)" font-size="9">f₀ = {{ f0Display }} Hz (LC串联谐振)</text>
+    </svg>
+
     <!-- 频率响应曲线 -->
     <div class="lc-response">
       <div class="lc-wave-label">

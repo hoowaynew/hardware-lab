@@ -11,6 +11,76 @@
       </div>
     </div>
 
+    <!-- I2C 总线拓扑图 -->
+    <svg class="i2c-topology" viewBox="0 0 360 130">
+      <!-- SCL 线 -->
+      <line x1="50" y1="35" x2="310" y2="35" stroke="#e74c3c" stroke-width="2"/>
+      <text x="15" y="38" fill="#e74c3c" font-size="9">SCL</text>
+
+      <!-- SDA 线 -->
+      <line x1="50" y1="55" x2="310" y2="55" stroke="#3498db" stroke-width="2"/>
+      <text x="15" y="58" fill="#3498db" font-size="9">SDA</text>
+
+      <!-- Vcc -->
+      <line x1="50" y1="15" x2="310" y2="15" stroke="var(--text-dim)" stroke-width="1.5" stroke-dasharray="3,2"/>
+      <text x="15" y="18" fill="var(--text-dim)" font-size="9">+Vcc</text>
+
+      <!-- 上拉电阻 Rp1 (SCL) -->
+      <path d="M55,15 h3 l3,-4 l6,8 l6,-8 l6,8 l6,-8 l3,4 h3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <line x1="55" y1="15" x2="55" y2="27" stroke="var(--wire)" stroke-width="1.5"/>
+      <text x="75" y="14" fill="#e67e22" font-size="8">Rp</text>
+      <text x="75" y="24" fill="#e67e22" font-size="7">4.7k</text>
+      <circle cx="55" cy="35" r="2.5" fill="var(--wire)"/>
+
+      <!-- 上拉电阻 Rp2 (SDA) -->
+      <path d="M75,15 h3 l3,-4 l6,8 l6,-8 l6,8 l6,-8 l3,4 h3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <line x1="75" y1="15" x2="75" y2="47" stroke="var(--wire)" stroke-width="1.5"/>
+      <circle cx="75" cy="55" r="2.5" fill="var(--wire)"/>
+
+      <!-- Master 节点 -->
+      <rect x="115" y="25" width="50" height="40" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="122" y="40" fill="var(--text)" font-size="8">Master</text>
+      <text x="122" y="50" fill="var(--text-dim)" font-size="7">MCU</text>
+      <text x="122" y="60" fill="var(--text-dim)" font-size="7">I2C</text>
+      <line x1="140" y1="25" x2="140" y2="35" stroke="#e74c3c" stroke-width="1.5"/>
+      <line x1="145" y1="25" x2="145" y2="55" stroke="#3498db" stroke-width="1.5"/>
+      <circle cx="140" cy="35" r="2.5" fill="var(--wire)"/>
+      <circle cx="145" cy="55" r="2.5" fill="var(--wire)"/>
+
+      <!-- Slave 1 -->
+      <rect x="195" y="25" width="50" height="40" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="202" y="40" fill="var(--text)" font-size="8">Slave</text>
+      <text x="202" y="50" fill="var(--text-dim)" font-size="7">EEPROM</text>
+      <text x="202" y="60" fill="var(--text-dim)" font-size="7">0x50</text>
+      <line x1="220" y1="25" x2="220" y2="35" stroke="#e74c3c" stroke-width="1.5"/>
+      <line x1="225" y1="25" x2="225" y2="55" stroke="#3498db" stroke-width="1.5"/>
+      <circle cx="220" cy="35" r="2.5" fill="var(--wire)"/>
+      <circle cx="225" cy="55" r="2.5" fill="var(--wire)"/>
+
+      <!-- Slave 2 -->
+      <rect x="270" y="25" width="40" height="40" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="275" y="40" fill="var(--text)" font-size="8">Slave</text>
+      <text x="275" y="50" fill="var(--text-dim)" font-size="7">Sensor</text>
+      <text x="275" y="60" fill="var(--text-dim)" font-size="7">0x68</text>
+      <line x1="290" y1="25" x2="290" y2="35" stroke="#e74c3c" stroke-width="1.5"/>
+      <line x1="295" y1="25" x2="295" y2="55" stroke="#3498db" stroke-width="1.5"/>
+      <circle cx="290" cy="35" r="2.5" fill="var(--wire)"/>
+      <circle cx="295" cy="55" r="2.5" fill="var(--wire)"/>
+
+      <!-- GND -->
+      <line x1="140" y1="65" x2="140" y2="90" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="220" y1="65" x2="220" y2="90" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="290" y1="65" x2="290" y2="90" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="140" y1="90" x2="290" y2="90" stroke="var(--wire)" stroke-width="1.5"/>
+      <line x1="205" y1="90" x2="225" y2="90" stroke="var(--text)" stroke-width="2.5"/>
+      <line x1="208" y1="94" x2="222" y2="94" stroke="var(--text)" stroke-width="2"/>
+      <line x1="211" y1="98" x2="219" y2="98" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="230" y="96" fill="var(--text-dim)" font-size="8">GND</text>
+
+      <!-- 开漏标注 -->
+      <text x="105" y="105" fill="var(--text-dim)" font-size="7">开漏输出 + 上拉电阻 = 线与逻辑</text>
+    </svg>
+
     <!-- SDA/SCL 波形 -->
     <div class="i2c-waveforms">
       <div class="i2c-wave-row">

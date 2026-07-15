@@ -32,6 +32,82 @@
       </div>
     </div>
 
+    <!-- 电路原理图 (Sallen-Key 二阶低通) -->
+    <svg class="sk-circuit" viewBox="0 0 360 160">
+      <!-- Vin 输入 -->
+      <text x="10" y="22" fill="var(--text-dim)" font-size="10">Vin</text>
+      <circle cx="35" cy="35" r="3" fill="var(--wire)"/>
+      <line x1="35" y1="35" x2="50" y2="35" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R1 (水平 zigzag) -->
+      <path d="M50,35 h3 l3,-5 l6,10 l6,-10 l6,10 l6,-10 l3,5 h3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="56" y="25" fill="#e67e22" font-size="9">R1</text>
+
+      <!-- 节点A -->
+      <line x1="92" y1="35" x2="130" y2="35" stroke="var(--wire)" stroke-width="2"/>
+      <circle cx="130" cy="35" r="3" fill="var(--wire)"/>
+
+      <!-- R2 (水平 zigzag) -->
+      <path d="M130,35 h3 l3,-5 l6,10 l6,-10 l6,10 l6,-10 l3,5 h3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="136" y="25" fill="#e67e22" font-size="9">R2</text>
+
+      <!-- 节点B → 运放+输入 -->
+      <line x1="172" y1="35" x2="210" y2="35" stroke="var(--wire)" stroke-width="2"/>
+      <circle cx="210" cy="35" r="3" fill="var(--wire)"/>
+
+      <!-- 运放 (三角形, ANSI标准) -->
+      <path d="M215,25 L215,45 L240,35 Z" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="219" y="33" fill="var(--text)" font-size="7">+</text>
+      <text x="219" y="44" fill="var(--text)" font-size="7">−</text>
+      <text x="243" y="39" fill="var(--text-dim)" font-size="8">A</text>
+
+      <!-- 运放+输入线 (从节点B) -->
+      <line x1="210" y1="35" x2="215" y2="35" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 运放−输入线 (从Vout反馈) -->
+      <line x1="215" y1="45" x2="200" y2="45" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="200" y1="45" x2="200" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 运放输出 → Vout -->
+      <line x1="240" y1="35" x2="290" y2="35" stroke="var(--accent)" stroke-width="2"/>
+      <circle cx="290" cy="35" r="3" fill="var(--accent)"/>
+      <text x="298" y="39" fill="var(--accent)" font-size="11" font-weight="bold">Vout</text>
+
+      <!-- Vout → −输入反馈线 (直通) -->
+      <line x1="290" y1="35" x2="290" y2="75" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="200" y1="75" x2="290" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- C1 从节点A → GND -->
+      <line x1="130" y1="35" x2="130" y2="50" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="122" y1="50" x2="138" y2="50" stroke="#3498db" stroke-width="2.5"/>
+      <line x1="122" y1="56" x2="138" y2="56" stroke="#3498db" stroke-width="2.5"/>
+      <text x="145" y="55" fill="#3498db" font-size="9">C1</text>
+      <line x1="130" y1="56" x2="130" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- C2 从节点B → Vout反馈路径 (跨接) -->
+      <line x1="210" y1="35" x2="210" y2="62" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="202" y1="62" x2="218" y2="62" stroke="#3498db" stroke-width="2.5"/>
+      <line x1="202" y1="68" x2="218" y2="68" stroke="#3498db" stroke-width="2.5"/>
+      <text x="225" y="67" fill="#3498db" font-size="9">C2</text>
+      <line x1="210" y1="68" x2="210" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- GND 回路 -->
+      <line x1="35" y1="75" x2="290" y2="75" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="35" y1="35" x2="35" y2="75" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 接地符号 -->
+      <line x1="140" y1="75" x2="156" y2="75" stroke="var(--text)" stroke-width="2.5"/>
+      <line x1="143" y1="79" x2="153" y2="79" stroke="var(--text)" stroke-width="2"/>
+      <line x1="146" y1="83" x2="150" y2="83" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="163" y="81" fill="var(--text-dim)" font-size="9">GND</text>
+
+      <!-- 电源标注 -->
+      <text x="225" y="18" fill="var(--text-dim)" font-size="8">+Vcc</text>
+      <line x1="227" y1="20" x2="227" y2="25" stroke="var(--text-dim)" stroke-width="1"/>
+      <text x="225" y="58" fill="var(--text-dim)" font-size="8">−Vee</text>
+      <line x1="227" y1="52" x2="225" y2="48" stroke="var(--text-dim)" stroke-width="1"/>
+    </svg>
+
     <!-- Frequency response curve -->
     <div class="sk-response">
       <div class="sk-response-label">频率响应曲线 (幅频特性)</div>

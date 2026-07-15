@@ -53,6 +53,33 @@
         </span>
       </div>
     </div>
+
+    <!-- 微带线截面图 -->
+    <svg class="pcb-cross-section" viewBox="0 0 340 130">
+      <!-- 空气层 -->
+      <rect x="20" y="10" width="300" height="50" fill="rgba(255,255,255,0.02)"/>
+      <text x="25" y="25" fill="var(--text-dim)" font-size="8">空气 (Air, εr=1)</text>
+
+      <!-- 铜走线 (微带线) -->
+      <rect x="140" y="58" width="60" height="4" fill="#b87333" stroke="#b87333" stroke-width="0.5"/>
+      <text x="170" y="55" text-anchor="middle" fill="#b87333" font-size="9" font-weight="bold">铜走线 W={{ traceWidth }}mm</text>
+
+      <!-- 介电层 (PCB基板) -->
+      <rect x="20" y="62" width="300" height="40" fill="rgba(46,204,113,0.08)" stroke="rgba(46,204,113,0.2)" stroke-width="0.5"/>
+      <text x="25" y="78" fill="var(--text-dim)" font-size="8">FR-4基板 (εr={{ epsilonR }})</text>
+      <text x="25" y="92" fill="var(--text-dim)" font-size="8">H={{ substrateHeight }}mm</text>
+
+      <!-- 电磁场线 (示意) -->
+      <path d="M145,62 Q145,75 155,62 Q155,75 165,62 Q165,75 175,62 Q175,75 185,62 Q185,75 195,62"
+            fill="none" stroke="var(--accent)" stroke-width="0.8" opacity="0.4" stroke-dasharray="2,2"/>
+
+      <!-- 参考地平面 (GND层) -->
+      <rect x="20" y="102" width="300" height="6" fill="#b87333" opacity="0.7"/>
+      <text x="170" y="118" text-anchor="middle" fill="var(--accent)" font-size="9" font-weight="bold">GND 参考地平面</text>
+
+      <!-- 阻抗标注 -->
+      <text x="310" y="85" text-anchor="end" fill="var(--accent)" font-size="11" font-weight="bold">Z₀={{ impedance }}Ω</text>
+    </svg>
   </div>
 </template>
 
@@ -68,6 +95,9 @@ const deviation = computed(() => props.simResult?.deviation || 0)
 const effectiveEr = computed(() => props.simResult?.effectiveEr || '—')
 const capacitance = computed(() => props.simResult?.capacitance || '—')
 const propDelay = computed(() => props.simResult?.propDelay || '—')
+const traceWidth = computed(() => props.simResult?.traceWidth ?? '—')
+const epsilonR = computed(() => props.simResult?.epsilonR ?? 4.4)
+const substrateHeight = computed(() => props.simResult?.substrateHeight ?? '—')
 
 const impWarn = computed(() => (props.simResult?.deviation || 0) > 15)
 const impOk = computed(() => (props.simResult?.deviation || 999) <= 5)

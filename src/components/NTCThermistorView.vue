@@ -54,6 +54,46 @@
       </div>
     </div>
 
+    <!-- 电路原理图 (NTC分压采集) -->
+    <svg class="ntc-circuit" viewBox="0 0 320 130">
+      <!-- Vcc -->
+      <text x="15" y="22" fill="var(--text-dim)" font-size="10">+Vcc = 3.3V</text>
+      <circle cx="50" cy="30" r="3" fill="var(--wire)"/>
+      <line x1="50" y1="30" x2="50" y2="38" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R_fixed (固定分压电阻) -->
+      <path d="M50,38 v3 l-5,3 l10,6 l-10,6 l10,6 l-10,6 l5,3 v3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="62" y="55" fill="#e67e22" font-size="9">R_fixed</text>
+
+      <!-- Vout节点 -->
+      <line x1="50" y1="74" x2="50" y2="80" stroke="var(--wire)" stroke-width="2"/>
+      <circle cx="50" cy="80" r="3" fill="var(--wire)"/>
+
+      <!-- ADC 输出 -->
+      <line x1="50" y1="80" x2="180" y2="80" stroke="var(--accent)" stroke-width="2"/>
+      <rect x="180" y="70" width="40" height="20" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="186" y="84" fill="var(--text)" font-size="9">ADC</text>
+      <text x="225" y="84" fill="var(--accent)" font-size="10" font-weight="bold">{{ adcValue }}</text>
+
+      <!-- 节点 → NTC -->
+      <line x1="50" y1="80" x2="50" y2="86" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- NTC 热敏电阻 (带斜线温度标注的矩形符号) -->
+      <rect x="40" y="86" width="20" height="24" rx="2" fill="none" stroke="#e74c3c" stroke-width="1.5"/>
+      <line x1="40" y1="86" x2="60" y2="110" stroke="#e74c3c" stroke-width="1"/>
+      <text x="68" y="100" fill="#e74c3c" font-size="9">NTC</text>
+      <text x="68" y="110" fill="#e74c3c" font-size="8">{{ rntcDisplay }}</text>
+
+      <!-- NTC → GND -->
+      <line x1="50" y1="110" x2="50" y2="118" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- GND -->
+      <line x1="42" y1="118" x2="58" y2="118" stroke="var(--text)" stroke-width="2.5"/>
+      <line x1="45" y1="122" x2="55" y2="122" stroke="var(--text)" stroke-width="2"/>
+      <line x1="48" y1="126" x2="52" y2="126" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="65" y="122" fill="var(--text-dim)" font-size="9">GND</text>
+    </svg>
+
     <!-- 精度信息 -->
     <div class="ntc-precision">
       <span>分辨率: {{ adcResolution }} ADC/°C</span>

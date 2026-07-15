@@ -15,6 +15,63 @@
       </div>
     </div>
 
+    <!-- 电路原理图 -->
+    <svg class="cc-circuit" viewBox="0 0 320 130">
+      <!-- V 电源 -->
+      <text x="15" y="22" fill="var(--text-dim)" font-size="10">V = {{ voltage }}V</text>
+      <line x1="50" y1="30" x2="50" y2="38" stroke="var(--wire)" stroke-width="2"/>
+      <text x="42" y="36" fill="var(--text-dim)" font-size="8">+</text>
+      <circle cx="50" cy="30" r="3" fill="var(--wire)"/>
+
+      <!-- 导线 V → SW (开关) -->
+      <line x1="50" y1="38" x2="50" y2="45" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- SW 开关符号 -->
+      <circle cx="50" cy="45" r="2" fill="var(--wire)"/>
+      <line x1="50" y1="45" x2="62" y2="38" :stroke="mode === 'charge' ? 'var(--accent)' : '#888'" stroke-width="2"/>
+      <text x="68" y="35" :fill="mode === 'charge' ? 'var(--accent)' : 'var(--text-dim)'" font-size="8">{{ mode === 'charge' ? 'SW(充电)' : 'SW(放电)' }}</text>
+
+      <!-- 导线 SW → R -->
+      <line x1="62" y1="38" x2="80" y2="38" stroke="var(--wire)" stroke-width="2" opacity="0"/>
+      <line x1="62" y1="45" x2="80" y2="45" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R 电阻 (ANSI zigzag, 水平) -->
+      <path d="M80,45 h3 l3,-5 l6,10 l6,-10 l6,10 l6,-10 l3,5 h3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="88" y="38" fill="#e67e22" font-size="10">R</text>
+
+      <!-- 导线 R → 节点 -->
+      <line x1="122" y1="45" x2="160" y2="45" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- Vc 输出节点 -->
+      <circle cx="160" cy="45" r="3" fill="var(--wire)"/>
+      <line x1="160" y1="45" x2="240" y2="45" :stroke="mode === 'charge' ? 'var(--accent)' : '#e74c3c'" stroke-width="2"/>
+      <text x="248" y="49" :fill="mode === 'charge' ? 'var(--accent)' : '#e74c3c'" font-size="11" font-weight="bold">Vc = {{ currentVoltage.toFixed(2) }}V</text>
+
+      <!-- 导线 节点 → C -->
+      <line x1="160" y1="45" x2="160" y2="55" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- C 电容 (两平行板) -->
+      <line x1="152" y1="55" x2="168" y2="55" stroke="#3498db" stroke-width="2.5"/>
+      <line x1="152" y1="61" x2="168" y2="61" stroke="#3498db" stroke-width="2.5"/>
+      <text x="175" y="60" fill="#3498db" font-size="10">C</text>
+
+      <!-- 导线 C → GND -->
+      <line x1="160" y1="61" x2="160" y2="85" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- GND 回路 -->
+      <line x1="50" y1="85" x2="160" y2="85" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="50" y1="45" x2="50" y2="85" stroke="var(--wire)" stroke-width="2" opacity="0"/>
+
+      <!-- 接地符号 -->
+      <line x1="92" y1="85" x2="108" y2="85" stroke="var(--wire)" stroke-width="2.5"/>
+      <line x1="95" y1="89" x2="105" y2="89" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="98" y1="93" x2="102" y2="93" stroke="var(--wire)" stroke-width="1.5"/>
+      <text x="115" y="91" fill="var(--text-dim)" font-size="9">GND</text>
+
+      <!-- 时间常数标注 -->
+      <text x="100" y="115" fill="var(--text-dim)" font-size="9">τ = RC = {{ tauMs.toFixed(1) }}ms</text>
+    </svg>
+
     <svg class="cc-curve-svg" :viewBox="`0 0 ${svgW} ${svgH}`">
       <!-- grid -->
       <defs>

@@ -55,6 +55,53 @@
       </div>
     </div>
 
+    <!-- 电路原理图 (光敏电阻分压采集) -->
+    <svg class="photo-circuit" viewBox="0 0 320 130">
+      <!-- Vcc -->
+      <text x="15" y="22" fill="var(--text-dim)" font-size="10">+Vcc = 3.3V</text>
+      <circle cx="50" cy="30" r="3" fill="var(--wire)"/>
+      <line x1="50" y1="30" x2="50" y2="38" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- 光敏电阻 (圆形带入射光箭头) -->
+      <circle cx="50" cy="52" r="10" fill="none" stroke="#f1c40f" stroke-width="1.5"/>
+      <line x1="44" y1="46" x2="56" y2="58" stroke="#f1c40f" stroke-width="1"/>
+      <line x1="56" y1="46" x2="44" y2="58" stroke="#f1c40f" stroke-width="1"/>
+      <!-- 入射光箭头 -->
+      <path d="M30,25 L40,40" stroke="#f1c40f" stroke-width="1.5" fill="none"/>
+      <path d="M36,38 L40,40 L37,36" stroke="#f1c40f" stroke-width="1.5" fill="#f1c40f"/>
+      <text x="20" y="20" fill="#f1c40f" font-size="8">光</text>
+      <text x="68" y="50" fill="#f1c40f" font-size="9">LDR</text>
+      <text x="68" y="60" fill="#f1c40f" font-size="8">{{ rphotoDisplay }}</text>
+
+      <line x1="50" y1="42" x2="50" y2="38" stroke="var(--wire)" stroke-width="2"/>
+      <line x1="50" y1="62" x2="50" y2="68" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- Vout节点 -->
+      <circle cx="50" cy="68" r="3" fill="var(--wire)"/>
+
+      <!-- ADC 输出 -->
+      <line x1="50" y1="68" x2="180" y2="68" stroke="var(--accent)" stroke-width="2"/>
+      <rect x="180" y="58" width="40" height="20" rx="3" fill="none" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="186" y="72" fill="var(--text)" font-size="9">ADC</text>
+      <text x="225" y="72" fill="var(--accent)" font-size="10" font-weight="bold">{{ adcValue }}</text>
+
+      <!-- 节点 → R_fixed -->
+      <line x1="50" y1="68" x2="50" y2="74" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- R_fixed (固定分压电阻) -->
+      <path d="M50,74 v3 l-5,3 l10,6 l-10,6 l10,6 l-10,6 l5,3 v3" fill="none" stroke="#e67e22" stroke-width="1.5"/>
+      <text x="62" y="92" fill="#e67e22" font-size="9">R_fixed</text>
+
+      <!-- R_fixed → GND -->
+      <line x1="50" y1="110" x2="50" y2="118" stroke="var(--wire)" stroke-width="2"/>
+
+      <!-- GND -->
+      <line x1="42" y1="118" x2="58" y2="118" stroke="var(--text)" stroke-width="2.5"/>
+      <line x1="45" y1="122" x2="55" y2="122" stroke="var(--text)" stroke-width="2"/>
+      <line x1="48" y1="126" x2="52" y2="126" stroke="var(--text)" stroke-width="1.5"/>
+      <text x="65" y="122" fill="var(--text-dim)" font-size="9">GND</text>
+    </svg>
+
     <!-- 光照等级 -->
     <div class="photo-level">
       <span>当前环境: {{ lightLevel }}</span>
