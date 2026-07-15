@@ -1,0 +1,94 @@
+{
+  "id": "oscilloscope-probe",
+  "topic_id": "debug-002",
+  "title": "示波器探头补偿：方波里的秘密",
+  "category": "debug",
+  "difficulty": "intermediate",
+  "description": "调节探头补偿电容和衰减比，观察方波响应——补偿不对，方波就变形！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "oscilloscope-probe",
+        "id": "PROBE1",
+        "x": 200,
+        "y": 140,
+        "label": "Oscilloscope Probe",
+        "defaultAttenuation": 10,
+        "defaultCompensation": 1.0,
+        "defaultSignalFreq": 1000,
+        "defaultSignalAmp": 2,
+        "defaultCableCap": 100,
+        "defaultSourceR": 50
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "select",
+      "property": "probeAttenuation",
+      "options": [1, 10, 100],
+      "default": 10,
+      "label": "探头衰减比 (1x/10x/100x)"
+    },
+    {
+      "type": "slider",
+      "property": "probeCompensation",
+      "min": 0.5,
+      "max": 2.0,
+      "step": 0.01,
+      "default": 1.0,
+      "unit": "×",
+      "label": "补偿系数"
+    },
+    {
+      "type": "slider",
+      "property": "probeSignalFreq",
+      "min": 100,
+      "max": 10000,
+      "step": 100,
+      "default": 1000,
+      "unit": "Hz",
+      "label": "方波频率"
+    },
+    {
+      "type": "slider",
+      "property": "probeSignalAmp",
+      "min": 0.1,
+      "max": 5,
+      "step": 0.1,
+      "default": 2,
+      "unit": "V",
+      "label": "信号幅度"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "compensation < 0.85",
+      "type": "PROBE_UNDER_COMPENSATION",
+      "title": "欠补偿！方波圆角下垂 ⚠️",
+      "explanation": "补偿系数={compensation}，探头电容过小。\n高频分量衰减过多，方波上升沿变圆。\n顺时针旋转补偿螺丝，增大补偿电容。",
+      "article_ref": "debug-002"
+    },
+    {
+      "condition": "compensation > 1.15",
+      "type": "PROBE_OVER_COMPENSATION",
+      "title": "过补偿！方波尖峰 overshoot ⚠️",
+      "explanation": "补偿系数={compensation}，探头电容过大。\n高频分量被放大，方波上升沿出现尖峰。\n逆时针旋转补偿螺丝，减小补偿电容。",
+      "article_ref": "debug-002"
+    },
+    {
+      "condition": "attenuation === 1 && signalFreq > 5000",
+      "type": "PROBE_1X_HIGH_FREQ",
+      "title": "1x探头测高频信号！带宽不足 ⚠️",
+      "explanation": "1x探头输入电容约100pF，带宽仅约6MHz。\n测量{signalFreq}Hz信号时波形严重畸变。\n高频测量请切换10x探头（带宽可达100MHz+）。",
+      "article_ref": "debug-002"
+    }
+  ],
+  "targets": {
+    "perfect": "补偿系数=1.0，方波平顶无失真",
+    "hint": "正确补偿时方波平顶平坦; R1C1 = R2C2"
+  }
+}

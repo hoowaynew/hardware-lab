@@ -1,0 +1,92 @@
+{
+  "id": "pcb-ground-loop",
+  "topic_id": "pcb-002",
+  "title": "PCB地平面回流路径：EMI根源",
+  "category": "pcb",
+  "difficulty": "intermediate",
+  "description": "调节信号频率、回流路径长度和地平面开槽，观察回流环路面积对EMI的影响——回流路径绕远就辐射超标！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "pcb-ground-loop",
+        "id": "PCB1",
+        "x": 200,
+        "y": 140,
+        "label": "PCB Layout",
+        "defaultFrequency": 100,
+        "defaultSlotWidth": 0,
+        "defaultTraceLen": 50,
+        "defaultGroundType": "solid"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "pcbFrequency",
+      "min": 1,
+      "max": 1000,
+      "step": 1,
+      "default": 100,
+      "unit": "MHz",
+      "label": "信号频率"
+    },
+    {
+      "type": "slider",
+      "property": "pcbTraceLen",
+      "min": 10,
+      "max": 150,
+      "step": 5,
+      "default": 50,
+      "unit": "mm",
+      "label": "走线长度"
+    },
+    {
+      "type": "select",
+      "property": "pcbGroundType",
+      "options": ["solid", "slotted", "split"],
+      "default": "solid",
+      "label": "地平面类型"
+    },
+    {
+      "type": "slider",
+      "property": "pcbSlotWidth",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 0,
+      "unit": "mm",
+      "label": "地平面开槽宽度"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "groundType !== 'solid' && slotWidth > 5",
+      "type": "PCB_RETURN_PATH_LONG",
+      "title": "回流路径绕远！EMI辐射严重 ⚠️",
+      "explanation": "地平面开槽{slotWidth}mm，回流电流被迫绕行。\n环路面积={loopArea}mm²，辐射强度∝f²×A。\n高频信号({frequency}MHz)下EMI远超标准限制。",
+      "article_ref": "pcb-002"
+    },
+    {
+      "condition": "groundType === 'split'",
+      "type": "PCB_GROUND_SPLIT",
+      "title": "地平面分割！信号跨岛 💥",
+      "explanation": "地平面被分割，信号回流必须跨越缝隙。\n等效阻抗剧增，信号完整性严重退化。\n跨分割信号会产生严重串扰和EMI，绝对禁止。",
+      "article_ref": "pcb-002"
+    },
+    {
+      "condition": "frequency > 500 && loopArea > 100",
+      "type": "PCB_EMI_EXCEED",
+      "title": "EMI辐射超标！⚠️",
+      "explanation": "频率{frequency}MHz + 环路面积{loopArea}mm² = EMI超标。\n高频电流环路是主要辐射源。\n减小回流路径长度，确保地平面完整。",
+      "article_ref": "pcb-002"
+    }
+  ],
+  "targets": {
+    "perfect": "完整地平面，回流路径最短，EMI在安全范围内",
+    "hint": "EMI ∝ f² × A_loop; 完整地平面 = 最小回流环路"
+  }
+}

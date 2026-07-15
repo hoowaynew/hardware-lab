@@ -101,7 +101,10 @@ const pathSteps = [
   { id: 'wifi-signal-attenuation', icon: '📡', title: 'WiFi信号衰减', phase: '无线', desc: '链路预算、RSSI、自由空间路径损耗', prerequisite: 'pcb-trace-impedance' },
   { id: 'photoresistor', icon: '💡', title: '光敏电阻测光', phase: '入门', desc: '光照→阻值→ADC，光传感器信号采集', prerequisite: 'ntc-thermistor' },
   { id: 'uart-signal', icon: '🔗', title: 'UART串口通信', phase: '通信', desc: '异步串口时序，波特率与帧格式', prerequisite: 'i2c-signal' },
-  { id: 'lc-bandpass', icon: '〰️', title: 'LC带通滤波器', phase: '进阶', desc: '谐振频率f₀=1/(2π√LC)，Q值与带宽', prerequisite: 'rc-filter' }
+  { id: 'lc-bandpass', icon: '〰️', title: 'LC带通滤波器', phase: '进阶', desc: '谐振频率f₀=1/(2π√LC)，Q值与带宽', prerequisite: 'rc-filter' },
+  { id: 'adc-sampling', icon: '📋', title: 'ADC采样量化', phase: '进阶', desc: '分辨率/LSB/量化误差/SNR/采样保持', prerequisite: 'gpio-modes' },
+  { id: 'pcb-ground-loop', icon: '🎨', title: '地平面回流路径', phase: '设计', desc: 'EMI根源：回流环路面积与地平面完整性', prerequisite: 'pcb-trace-impedance' },
+  { id: 'oscilloscope-probe', icon: '🐛', title: '示波器探头补偿', phase: '调试', desc: '1x/10x衰减、补偿电容、方波校准', prerequisite: 'logic-analyzer-debug' }
 ]
 
 const completedInPath = computed(() => {

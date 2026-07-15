@@ -297,6 +297,33 @@
       <text x="25" y="40" text-anchor="middle" :fill="color" font-size="5">R-2R</text>
     </template>
 
+    <template v-else-if="type === 'adc-sampling'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">ADC</text>
+      <!-- ADC阶梯符号 -->
+      <path d="M 10 35 L 16 35 L 16 30 L 22 30 L 22 25 L 28 25 L 28 20 L 34 20 L 34 15 L 40 15" fill="none" :stroke="color" stroke-width="1"/>
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">量化</text>
+    </template>
+
+    <template v-else-if="type === 'pcb-ground-loop'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">PCB</text>
+      <!-- PCB走线+地平面符号 -->
+      <rect x="10" y="30" width="30" height="12" rx="1" fill="none" :stroke="color" stroke-width="0.8" opacity="0.4"/>
+      <line x1="10" y1="20" x2="40" y2="20" :stroke="color" stroke-width="1.2"/>
+      <line x1="10" y1="24" x2="40" y2="24" :stroke="color" stroke-width="0.6" stroke-dasharray="2,1"/>
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">GND</text>
+    </template>
+
+    <template v-else-if="type === 'oscilloscope-probe'">
+      <rect x="0" y="0" width="50" height="50" rx="8" fill="#2a2a3e" :stroke="color" stroke-width="2"/>
+      <text x="25" y="10" text-anchor="middle" :fill="color" font-size="6" font-weight="bold">PROBE</text>
+      <!-- 方波+探头符号 -->
+      <path d="M 10 30 L 20 30 L 20 18 L 30 18 L 30 30 L 40 30" fill="none" :stroke="color" stroke-width="1"/>
+      <circle cx="10" cy="30" r="2" :fill="color"/>
+      <text x="25" y="44" text-anchor="middle" :fill="color" font-size="5">10x</text>
+    </template>
+
     <!-- 默认 -->
     <template v-else>
       <rect x="0" y="0" :width="width" :height="height" fill="#2a2a3e" :stroke="color" stroke-width="1.5" rx="4"/>

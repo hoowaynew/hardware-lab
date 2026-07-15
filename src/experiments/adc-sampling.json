@@ -1,0 +1,93 @@
+{
+  "id": "adc-sampling",
+  "topic_id": "stm32-002",
+  "title": "STM32 ADC采样量化：精度与误差",
+  "category": "stm32",
+  "difficulty": "intermediate",
+  "description": "调节ADC分辨率位数、参考电压和采样率，观察量化误差与信噪比——位数不够就测不准！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "adc-sampling",
+        "id": "ADC1",
+        "x": 200,
+        "y": 140,
+        "label": "STM32 ADC",
+        "defaultVref": 3.3,
+        "defaultBits": 12,
+        "defaultSampleRate": 1000,
+        "defaultInputV": 1.5,
+        "defaultAcqTime": 7.5
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "adcBits",
+      "min": 6,
+      "max": 16,
+      "step": 1,
+      "default": 12,
+      "unit": "bit",
+      "label": "ADC分辨率位数"
+    },
+    {
+      "type": "slider",
+      "property": "adcInputV",
+      "min": 0,
+      "max": 3.3,
+      "step": 0.01,
+      "default": 1.5,
+      "unit": "V",
+      "label": "输入电压 Vin"
+    },
+    {
+      "type": "select",
+      "property": "adcVref",
+      "options": [1.2, 2.048, 2.5, 3.0, 3.3],
+      "default": 3.3,
+      "label": "参考电压 Vref"
+    },
+    {
+      "type": "slider",
+      "property": "adcAcqTime",
+      "min": 1.5,
+      "max": 60,
+      "step": 1.5,
+      "default": 7.5,
+      "unit": "μs",
+      "label": "采样保持时间"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "inputV > vref",
+      "type": "ADC_INPUT_OVER_RANGE",
+      "title": "输入超出参考电压范围！⚠️",
+      "explanation": "Vin={inputV}V > Vref={vref}V，ADC满量程饱和，输出恒为最大值。\n输入电压不得超过Vref，需要分压或升高Vref。",
+      "article_ref": "stm32-002"
+    },
+    {
+      "condition": "inputV < vref && acqTime < sourceImpedance * 0.01",
+      "type": "ADC_ACQ_TOO_SHORT",
+      "title": "采样保持时间不足！⚠️",
+      "explanation": "采样保持时间仅{acqTime}μs，高源阻抗下采样电容充不满。\n量化结果偏低且不稳定。增大采样时间或降低源阻抗。",
+      "article_ref": "stm32-002"
+    },
+    {
+      "condition": "bits <= 8",
+      "type": "ADC_LOW_RESOLUTION",
+      "title": "分辨率太低！精度不足 ⚠️",
+      "explanation": "仅{bits}位ADC，LSB={lsb}mV，量化误差达±{lsb/2}mV。\nSNR仅{snr}dB，无法精确测量小信号。建议至少12位。",
+      "article_ref": "stm32-002"
+    }
+  ],
+  "targets": {
+    "perfect": "Vin在量程内，分辨率≥12位，采样时间充足",
+    "hint": "量化误差 = ±LSB/2; SNR = 6.02N + 1.76 dB"
+  }
+}

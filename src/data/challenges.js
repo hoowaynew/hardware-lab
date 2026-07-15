@@ -366,5 +366,59 @@ export const challengeData = {
         detail: `${bits}位/Vref=${vref}V: D=${ph?.digitalInput} → Vout=${vout.toFixed(4)}V`
       }
     }
+  },
+  'adc-sampling': {
+    title: '挑战：精确测量1.5V电压',
+    goal: '量化误差≤0.5mV，无超量程警告',
+    constraint: '分辨率≥12位，采样时间≥7.5μs',
+    timeLimit: 45,
+    check: (result) => {
+      const adc = result?.results?.ADC1
+      const bits = adc?.bits ?? 12
+      const lsb = adc?.lsb ?? 0
+      const overRange = adc?.overRange ?? false
+      const hasError = adc?.error ? true : false
+      const quantError = (lsb / 2) * 1000 // mV
+      return {
+        passed: bits >= 12 && !overRange && !hasError && quantError <= 0.5,
+        score: Math.max(0, 100 - (overRange ? 50 : 0) - (bits < 12 ? 30 : 0) - (quantError > 0.5 ? 20 : 0)),
+        detail: `${bits}位/Vref=${adc?.vref}V: LSB=${(lsb*1000).toFixed(2)}mV, 误差±${quantError.toFixed(2)}mV`
+      }
+    }
+  },
+  'pcb-ground-loop': {
+    title: '挑战：EMI辐射低于30dB',
+    goal: 'EMI等级≤30dB（安全范围）',
+    constraint: '不能使用分割地平面',
+    timeLimit: 60,
+    check: (result) => {
+      const pcb = result?.results?.PCB1
+      const emi = pcb?.emiLevel ?? 100
+      const groundType = pcb?.groundType ?? 'solid'
+      const hasError = pcb?.error ? true : false
+      return {
+        passed: emi <= 30 && groundType !== 'split' && !hasError,
+        score: Math.max(0, 100 - emi - (groundType === 'split' ? 50 : 0) - (hasError ? 20 : 0)),
+        detail: `地平面=${groundType}, EMI=${emi.toFixed(1)}dB, 环路=${pcb?.loopArea?.toFixed(0)}mm²`
+      }
+    }
+  },
+  'oscilloscope-probe': {
+    title: '挑战：完美补偿方波',
+    goal: '补偿系数在0.97~1.03之间',
+    constraint: '衰减比10x，无带宽不足警告',
+    timeLimit: 45,
+    check: (result) => {
+      const probe = result?.results?.PROBE1
+      const comp = probe?.compensation ?? 1.0
+      const att = probe?.attenuation ?? 10
+      const hasError = probe?.error ? true : false
+      const compOk = comp >= 0.97 && comp <= 1.03
+      return {
+        passed: compOk && att === 10 && !hasError,
+        score: Math.max(0, 100 - Math.abs(comp - 1) * 200 - (att !== 10 ? 30 : 0) - (hasError ? 20 : 0)),
+        detail: `衰减=${att}x, 补偿=${comp.toFixed(3)}, 带宽=${probe?.bandwidth?.toFixed(1)}MHz`
+      }
+    }
   }
 }

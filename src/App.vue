@@ -780,6 +780,72 @@
           </span>
         </div>
       </div>
+
+      <!-- ADC采样实验布局 -->
+      <div v-else-if="currentExpId === 'adc-sampling'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <ADCSamplingView
+          :simResult="store.simResult?.results?.ADC1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- PCB地平面回流实验布局 -->
+      <div v-else-if="currentExpId === 'pcb-ground-loop'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <PcbGroundLoopView
+          :simResult="store.simResult?.results?.PCB1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 示波器探头补偿实验布局 -->
+      <div v-else-if="currentExpId === 'oscilloscope-probe'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <OscilloscopeProbeView
+          :simResult="store.simResult?.results?.PROBE1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -875,6 +941,9 @@ import LCBandpassView from './components/LCBandpassView.vue'
 import MOSFETSwitchView from './components/MOSFETSwitchView.vue'
 import RelayDriverView from './components/RelayDriverView.vue'
 import R2RDACView from './components/R2RDACView.vue'
+import ADCSamplingView from './components/ADCSamplingView.vue'
+import PcbGroundLoopView from './components/PcbGroundLoopView.vue'
+import OscilloscopeProbeView from './components/OscilloscopeProbeView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -912,6 +981,9 @@ import lcBandpassConfig from './experiments/lc-bandpass.json'
 import mosfetConfig from './experiments/mosfet-switch.json'
 import relayConfig from './experiments/relay-driver.json'
 import r2rDacConfig from './experiments/r2r-dac.json'
+import adcSamplingConfig from './experiments/adc-sampling.json'
+import pcbGroundLoopConfig from './experiments/pcb-ground-loop.json'
+import oscilloscopeProbeConfig from './experiments/oscilloscope-probe.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -943,7 +1015,10 @@ const allExperiments = [
   { id: 'lc-bandpass', icon: '〰️', shortTitle: 'LC带通滤波', desc: 'f₀=1/(2π√LC)', config: lcBandpassConfig, difficulty: 'advanced' },
   { id: 'mosfet-switch', icon: '🔌', shortTitle: 'MOSFET开关', desc: 'Vgs阈值/Rds(on)/功耗', config: mosfetConfig, difficulty: 'intermediate' },
   { id: 'relay-driver', icon: '⚡', shortTitle: '继电器驱动', desc: '续流二极管保护', config: relayConfig, difficulty: 'intermediate' },
-  { id: 'r2r-dac', icon: '📊', shortTitle: 'R-2R DAC', desc: '数字转模拟电压', config: r2rDacConfig, difficulty: 'advanced' }
+  { id: 'r2r-dac', icon: '📊', shortTitle: 'R-2R DAC', desc: '数字转模拟电压', config: r2rDacConfig, difficulty: 'advanced' },
+  { id: 'adc-sampling', icon: '📋', shortTitle: 'ADC采样', desc: '量化误差/SNR/采样保持', config: adcSamplingConfig, difficulty: 'intermediate' },
+  { id: 'pcb-ground-loop', icon: '🎨', shortTitle: '地平面回流', desc: 'EMI/回流路径/环路面积', config: pcbGroundLoopConfig, difficulty: 'intermediate' },
+  { id: 'oscilloscope-probe', icon: '🐛', shortTitle: '探头补偿', desc: '欠/过补偿/10x带宽', config: oscilloscopeProbeConfig, difficulty: 'intermediate' }
 ]
 
 const categories = [

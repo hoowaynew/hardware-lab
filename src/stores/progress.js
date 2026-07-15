@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 const STORAGE_KEY = 'hw-lab-progress'
-const TOTAL_EXPERIMENTS = 24
+const TOTAL_EXPERIMENTS = 27
 
 export const useProgressStore = defineStore('progress', {
   state: () => ({
@@ -35,7 +35,7 @@ export const useProgressStore = defineStore('progress', {
       { id: 'all-done', name: '🏆 硬件达人', desc: '完成全部24个实验' },
       { id: 'perfect-three', name: '⭐ 完美主义', desc: '3个实验无错误通关' },
       { id: 'perfect-six', name: '✨ 精益求精', desc: '6个实验无错误通关' },
-      { id: 'perfect-all', name: '👑 零失误大师', desc: '全部24个实验无错误通关' }
+      { id: 'perfect-all', name: '👑 零失误大师', desc: '全部27个实验无错误通关' }
     ]
   },
 

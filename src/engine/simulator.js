@@ -243,8 +243,9 @@ export class Simulator {
       'mosfet-switch': () => this._simulateMOSFET(comp),
       'relay-driver': () => this._simulateRelay(comp),
       'r2r-dac': () => this._simulateR2RDAC(comp),
-      oscilloscope: () => ({ state: 'idle' }),
-      probe: () => ({ state: 'idle' })
+      'adc-sampling': () => this._simulateADC(comp),
+      'pcb-ground-loop': () => this._simulatePcbGroundLoop(comp),
+      'oscilloscope-probe': () => this._simulateOscilloscopeProbe(comp)
     }
 
     const handler = handlers[comp.type]
@@ -1980,6 +1981,174 @@ export class Simulator {
       result.error = 'DAC_FULLSCALE'
       result.errorTitle = '接近满量程！精度降低 ⚠️'
       result.errorExplanation = `数字输入 ${digitalInput} 接近最大值 ${maxVal}。\n输出 ${vout.toFixed(3)}V 接近Vref ${vref}V。\n实际DAC接近满量程时有非线性误差，建议留10%余量。`
+    }
+
+    return result
+  }
+
+  /**
+   * ADC采样量化仿真
+   * LSB = Vref / 2^N
+   * SNR = 6.02N + 1.76 dB
+   * 量化误差 = ±LSB/2
+   */
+  _simulateADC(comp) {
+    const vref = this.context.adcVref ?? comp.defaultVref ?? 3.3
+    const bits = this.context.adcBits ?? comp.defaultBits ?? 12
+    const inputV = this.context.adcInputV ?? comp.defaultInputV ?? 1.5
+    const acqTime = this.context.adcAcqTime ?? comp.defaultAcqTime ?? 7.5
+
+    const maxCode = Math.pow(2, bits) - 1
+    const lsb = vref / Math.pow(2, bits)
+    const snr = 6.02 * bits + 1.76
+
+    // Source impedance estimation (based on acquisition time)
+    // T_acq > 10 * R_src * C_sample (typical C_sample ≈ 5pF)
+    const sampleCap = 5e-12 // 5pF
+    const maxSourceR = acqTime * 1e-6 / (10 * sampleCap) // Ω
+    const sourceImpedance = 10000 // assumed 10kΩ source
+
+    let digitalCode
+    let overRange = false
+    if (inputV > vref) {
+      digitalCode = maxCode
+      overRange = true
+    } else if (inputV < 0) {
+      digitalCode = 0
+    } else {
+      digitalCode = Math.round(inputV / lsb)
+    }
+
+    const quantError = Math.abs(inputV - digitalCode * lsb)
+    const acqSufficient = acqTime >= sourceImpedance * sampleCap * 10 * 1e6 // μs
+
+    const result = {
+      vref, bits, inputV, acqTime,
+      maxCode, lsb, snr,
+      digitalCode,
+      overRange,
+      quantError,
+      acqSufficient,
+      sourceImpedance,
+      maxSourceR,
+      loadState: 'running'
+    }
+
+    if (overRange) {
+      result.error = 'ADC_INPUT_OVER_RANGE'
+      result.errorTitle = '输入超出参考电压范围！⚠️'
+      result.errorExplanation = `Vin=${inputV.toFixed(2)}V > Vref=${vref}V，ADC满量程饱和，输出恒为最大值${maxCode}。\n输入电压不得超过Vref，需要分压或升高Vref。`
+    } else if (!acqSufficient) {
+      result.error = 'ADC_ACQ_TOO_SHORT'
+      result.errorTitle = '采样保持时间不足！⚠️'
+      result.errorExplanation = `采样保持时间仅${acqTime}μs，高源阻抗(${sourceImpedance}Ω)下采样电容充不满。\n量化结果偏低且不稳定。增大采样时间或降低源阻抗。`
+    } else if (bits <= 8) {
+      result.error = 'ADC_LOW_RESOLUTION'
+      result.errorTitle = '分辨率太低！精度不足 ⚠️'
+      result.errorExplanation = `仅${bits}位ADC，LSB=${(lsb*1000).toFixed(1)}mV，量化误差达±${(lsb/2*1000).toFixed(1)}mV。\nSNR仅${snr.toFixed(1)}dB，无法精确测量小信号。建议至少12位。`
+    }
+
+    return result
+  }
+
+  /**
+   * PCB地平面回流路径仿真
+   * EMI ∝ f² × A_loop
+   * 回流路径长度取决于地平面完整性
+   */
+  _simulatePcbGroundLoop(comp) {
+    const frequency = this.context.pcbFrequency ?? comp.defaultFrequency ?? 100
+    const traceLen = this.context.pcbTraceLen ?? comp.defaultTraceLen ?? 50
+    const groundType = this.context.pcbGroundType ?? comp.defaultGroundType ?? 'solid'
+    const slotWidth = this.context.pcbSlotWidth ?? comp.defaultSlotWidth ?? 0
+
+    let returnLen, loopArea, emiLevel
+
+    if (groundType === 'solid') {
+      returnLen = traceLen
+      loopArea = traceLen * 2 // minimal: trace directly above return
+    } else if (groundType === 'slotted') {
+      returnLen = traceLen + slotWidth * 3
+      loopArea = traceLen * (slotWidth + 2)
+    } else {
+      // split
+      returnLen = traceLen * 3
+      loopArea = traceLen * traceLen * 0.5
+    }
+
+    // EMI proportional to f² × A (simplified dB scale)
+    const fGHz = frequency / 1000
+    emiLevel = 20 * Math.log10(fGHz * loopArea / 10 + 1)
+    if (groundType === 'split') emiLevel += 20
+    if (groundType === 'slotted' && slotWidth > 5) emiLevel += 10
+
+    const result = {
+      frequency, traceLen, groundType, slotWidth,
+      returnLen, loopArea, emiLevel,
+      loadState: 'running'
+    }
+
+    if (groundType === 'split') {
+      result.error = 'PCB_GROUND_SPLIT'
+      result.errorTitle = '地平面分割！信号跨岛 💥'
+      result.errorExplanation = `地平面被分割，信号回流必须跨越缝隙。\n等效阻抗剧增，信号完整性严重退化。\n跨分割信号会产生严重串扰和EMI，绝对禁止。`
+    } else if (groundType === 'slotted' && slotWidth > 5) {
+      result.error = 'PCB_RETURN_PATH_LONG'
+      result.errorTitle = '回流路径绕远！EMI辐射严重 ⚠️'
+      result.errorExplanation = `地平面开槽${slotWidth}mm，回流电流被迫绕行。\n环路面积=${loopArea.toFixed(0)}mm²，辐射强度∝f²×A。\n高频信号(${frequency}MHz)下EMI远超标准限制。`
+    } else if (emiLevel > 40) {
+      result.error = 'PCB_EMI_EXCEED'
+      result.errorTitle = 'EMI辐射超标！⚠️'
+      result.errorExplanation = `频率${frequency}MHz + 环路面积${loopArea.toFixed(0)}mm² = EMI超标。\n高频电流环路是主要辐射源。\n减小回流路径长度，确保地平面完整。`
+    }
+
+    return result
+  }
+
+  /**
+   * 示波器探头补偿仿真
+   * 正确补偿: R1C1 = R2C2 (补偿系数 = 1.0)
+   * 1x探头带宽受限于电缆电容; 10x探头带宽高得多
+   */
+  _simulateOscilloscopeProbe(comp) {
+    const attenuation = this.context.probeAttenuation ?? comp.defaultAttenuation ?? 10
+    const compensation = this.context.probeCompensation ?? comp.defaultCompensation ?? 1.0
+    const signalFreq = this.context.probeSignalFreq ?? comp.defaultSignalFreq ?? 1000
+    const signalAmp = this.context.probeSignalAmp ?? comp.defaultSignalAmp ?? 2
+    const cableCap = comp.defaultCableCap ?? 100 // pF
+    const sourceR = comp.defaultSourceR ?? 50
+
+    const r1 = attenuation === 1 ? 0 : (attenuation - 1) * 1e6 // Ω
+    const r2 = 1e6 // scope input 1MΩ
+
+    // Bandwidth: 1x probe limited by cable cap; 10x probe much better
+    const totalCap = attenuation === 1 ? cableCap : cableCap / attenuation
+    const bandwidth = 1 / (2 * Math.PI * r2 * totalCap * 1e-12) / 1e6 // MHz
+    const riseTime = 0.35 / (bandwidth * 1e6) * 1e9 // ns
+
+    const displayVoltage = signalAmp / attenuation
+
+    const result = {
+      attenuation, compensation, signalFreq, signalAmp,
+      cableCap, sourceR, r1, r2,
+      bandwidth: Math.min(bandwidth, attenuation === 1 ? 6 : 200),
+      riseTime,
+      displayVoltage,
+      loadState: 'running'
+    }
+
+    if (compensation < 0.85) {
+      result.error = 'PROBE_UNDER_COMPENSATION'
+      result.errorTitle = '欠补偿！方波圆角下垂 ⚠️'
+      result.errorExplanation = `补偿系数=${compensation.toFixed(2)}，探头电容过小。\n高频分量衰减过多，方波上升沿变圆。\n顺时针旋转补偿螺丝，增大补偿电容。`
+    } else if (compensation > 1.15) {
+      result.error = 'PROBE_OVER_COMPENSATION'
+      result.errorTitle = '过补偿！方波尖峰 overshoot ⚠️'
+      result.errorExplanation = `补偿系数=${compensation.toFixed(2)}，探头电容过大。\n高频分量被放大，方波上升沿出现尖峰。\n逆时针旋转补偿螺丝，减小补偿电容。`
+    } else if (attenuation === 1 && signalFreq > 5000) {
+      result.error = 'PROBE_1X_HIGH_FREQ'
+      result.errorTitle = '1x探头测高频信号！带宽不足 ⚠️'
+      result.errorExplanation = `1x探头输入电容约${cableCap}pF，带宽仅约6MHz。\n测量${signalFreq}Hz信号时波形严重畸变。\n高频测量请切换10x探头（带宽可达100MHz+）。`
     }
 
     return result
