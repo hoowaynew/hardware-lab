@@ -60,8 +60,18 @@
     {
       "type": "toggle",
       "property": "bleObstacle",
-      "values": ["none", "body", "wall", "pocket"],
-      "labels": ["空旷", "人体遮挡", "一堵墙", "口袋中"],
+      "values": [
+        "none",
+        "body",
+        "wall",
+        "pocket"
+      ],
+      "labels": [
+        "空旷",
+        "人体遮挡",
+        "一堵墙",
+        "口袋中"
+      ],
       "label": "障碍物"
     }
   ],
@@ -72,6 +82,14 @@
       "title": "信号太弱！连接断开 ⚠️",
       "explanation": "接收信号强度 {rssi}dBm 低于BLE灵敏度 {rxSensitivity}dBm。\n2.4GHz信号被障碍物吸收/反射，链路预算不足。\n缩短距离、消除遮挡、或增大发射功率。",
       "article_ref": "wireless-002"
+    },
+    {
+      "condition": "distance > maxDistance * 0.8 && obstacleLoss > 10",
+      "type": "BLE_OBSTACLE_TOO_MANY",
+      "title": "障碍物穿透损耗过大！⚠️",
+      "explanation": "信号穿过厚墙导致额外损耗{obstacleLoss}dB，有效通信距离大幅缩短。考虑减少障碍物或使用mesh组网。",
+      "article_ref": "wireless-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

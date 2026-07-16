@@ -30,22 +30,56 @@
     {
       "type": "toggle",
       "property": "loraSF",
-      "values": [7, 8, 9, 10, 11, 12],
-      "labels": ["SF7", "SF8", "SF9", "SF10", "SF11", "SF12"],
+      "values": [
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "labels": [
+        "SF7",
+        "SF8",
+        "SF9",
+        "SF10",
+        "SF11",
+        "SF12"
+      ],
       "label": "扩频因子"
     },
     {
       "type": "toggle",
       "property": "loraBW",
-      "values": [62.5, 125, 250, 500],
-      "labels": ["62.5kHz", "125kHz", "250kHz", "500kHz"],
+      "values": [
+        62.5,
+        125,
+        250,
+        500
+      ],
+      "labels": [
+        "62.5kHz",
+        "125kHz",
+        "250kHz",
+        "500kHz"
+      ],
       "label": "带宽"
     },
     {
       "type": "toggle",
       "property": "loraCR",
-      "values": [5, 6, 7, 8],
-      "labels": ["4/5", "4/6", "4/7", "4/8"],
+      "values": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "labels": [
+        "4/5",
+        "4/6",
+        "4/7",
+        "4/8"
+      ],
       "label": "编码率"
     },
     {
@@ -86,6 +120,14 @@
       "title": "LoRa配置问题 ⚠️",
       "explanation": "检查链路预算、空中时间和SF/BW组合是否合理。",
       "article_ref": "wireless-003"
+    },
+    {
+      "condition": "airTimeMs > 1000 && dutyCycle > 0.1",
+      "type": "LORA_DUTY_CYCLE_VIOLATION",
+      "title": "占空比违规！⚠️",
+      "explanation": "空中时间{airTimeMs}ms过长，占空比{dutyCycle}超过法规限制(1%)。降低SF或减小带宽。",
+      "article_ref": "wireless-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

@@ -29,8 +29,18 @@
     {
       "type": "toggle",
       "property": "jtagScanMode",
-      "values": ["extest", "intest", "sample", "bypass"],
-      "labels": ["EXTEST", "INTEST", "SAMPLE", "BYPASS"],
+      "values": [
+        "extest",
+        "intest",
+        "sample",
+        "bypass"
+      ],
+      "labels": [
+        "EXTEST",
+        "INTEST",
+        "SAMPLE",
+        "BYPASS"
+      ],
       "label": "扫描模式"
     },
     {
@@ -56,22 +66,48 @@
     {
       "type": "toggle",
       "property": "jtagTckFreq",
-      "values": [1, 5, 10, 25, 50],
-      "labels": ["1MHz", "5MHz", "10MHz", "25MHz", "50MHz"],
+      "values": [
+        1,
+        5,
+        10,
+        25,
+        50
+      ],
+      "labels": [
+        "1MHz",
+        "5MHz",
+        "10MHz",
+        "25MHz",
+        "50MHz"
+      ],
       "label": "TCK频率"
     },
     {
       "type": "toggle",
       "property": "jtagSignalIntegrity",
-      "values": ["good", "marginal", "poor"],
-      "labels": ["良好", "临界", "差"],
+      "values": [
+        "good",
+        "marginal",
+        "poor"
+      ],
+      "labels": [
+        "良好",
+        "临界",
+        "差"
+      ],
       "label": "信号完整性"
     },
     {
       "type": "toggle",
       "property": "jtagPullup",
-      "values": [true, false],
-      "labels": ["有上拉(10kΩ)", "无上拉"],
+      "values": [
+        true,
+        false
+      ],
+      "labels": [
+        "有上拉(10kΩ)",
+        "无上拉"
+      ],
       "label": "TMS/TDI上拉"
     }
   ],
@@ -82,6 +118,14 @@
       "title": "边界扫描异常 ⚠️",
       "explanation": "检查上拉电阻、TCK信号质量和扫描链长度。",
       "article_ref": "debug-003"
+    },
+    {
+      "condition": "tckFreq > 20 && chainLength > 128",
+      "type": "JTAG_TCK_TOO_FAST",
+      "title": "TCK频率过高！扫描失败 ⚠️",
+      "explanation": "长链路下TCK={tckFreq}MHz导致信号完整性问题。建议TCK≤10MHz或加缓冲器。",
+      "article_ref": "debug-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

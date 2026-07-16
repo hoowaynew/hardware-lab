@@ -2468,6 +2468,51 @@ body {
 }
 
 /* ===== 移动端体验优化 ===== */
+/* ============ 移动端响应式 ============ */
+
+/* 平板 (≤1024px) */
+@media (max-width: 1024px) {
+  .app {
+    padding: 12px;
+    max-width: 100%;
+  }
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .app-header .header-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
+/* 大手机/小平板 (≤768px) */
+@media (max-width: 768px) {
+  .app {
+    padding: 10px;
+  }
+  .category-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .experiment-content {
+    gap: 10px;
+  }
+  .header-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 19px;
+  }
+  .share-btn, .back-btn {
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 14px;
+  }
+}
+
+/* 手机 (≤600px) */
 @media (max-width: 600px) {
   .app {
     padding: 8px;
@@ -2504,6 +2549,39 @@ body {
   }
   .status-bar {
     font-size: 13px;
+  }
+}
+
+/* 小手机 (≤375px) */
+@media (max-width: 375px) {
+  .app {
+    padding: 6px;
+  }
+  .category-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .category-card {
+    min-height: 56px;
+    padding: 8px 10px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .cat-icon { font-size: 22px; }
+  .cat-name { font-size: 13px; }
+  .experiment-title {
+    font-size: 16px;
+  }
+  .experiment-desc {
+    font-size: 12px;
+  }
+  .status-bar {
+    font-size: 12px;
+  }
+  .icon-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
   }
 }
 

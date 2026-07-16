@@ -38,22 +38,48 @@
     {
       "type": "toggle",
       "property": "uartBaudrate",
-      "values": [9600, 19200, 38400, 57600, 115200],
-      "labels": ["9600", "19200", "38400", "57600", "115200"],
+      "values": [
+        9600,
+        19200,
+        38400,
+        57600,
+        115200
+      ],
+      "labels": [
+        "9600",
+        "19200",
+        "38400",
+        "57600",
+        "115200"
+      ],
       "label": "波特率 (bps)"
     },
     {
       "type": "toggle",
       "property": "uartRxMismatch",
-      "values": [false, true],
-      "labels": ["收发一致", "接收端波特率×2"],
+      "values": [
+        false,
+        true
+      ],
+      "labels": [
+        "收发一致",
+        "接收端波特率×2"
+      ],
       "label": "波特率匹配"
     },
     {
       "type": "toggle",
       "property": "uartParity",
-      "values": ["none", "even", "odd"],
-      "labels": ["无校验", "偶校验", "奇校验"],
+      "values": [
+        "none",
+        "even",
+        "odd"
+      ],
+      "labels": [
+        "无校验",
+        "偶校验",
+        "奇校验"
+      ],
       "label": "校验位"
     }
   ],
@@ -64,6 +90,14 @@
       "title": "波特率不匹配！收到乱码 ⚠️",
       "explanation": "发送端 {txBaud} bps，接收端按 {rxBaud} bps 解码。\n每位采样时间错位，数据完全错乱。\nUART没有时钟线，收发双方必须约定相同波特率。",
       "article_ref": "comm-002"
+    },
+    {
+      "condition": "cableLength > 15 && baudrate > 9600",
+      "type": "UART_LINE_TOO_LONG",
+      "title": "线缆过长！信号畸变 ⚠️",
+      "explanation": "线缆{cableLength}m在{baudrate}bps下产生明显衰减。RS-232标准建议≤15m，更远距离用RS-485。",
+      "article_ref": "comm-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

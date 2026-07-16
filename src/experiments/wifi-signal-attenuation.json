@@ -75,6 +75,14 @@
       "title": "信号太弱！无法接收 ⚠️",
       "explanation": "接收信号强度 {rssi}dBm 低于接收灵敏度 {rxSensitivity}dBm。\n信号被障碍物衰减过多，链路预算不足。\n缩短距离、减少障碍、或增大发射功率。",
       "article_ref": "wireless-001"
+    },
+    {
+      "condition": "wallCount >= 3 && rssi > -90",
+      "type": "WIFI_TOO_MANY_WALLS",
+      "title": "穿墙过多！速率严重下降 ⚠️",
+      "explanation": "已穿过{wallCount}面墙，虽然未断线但MCS降级。建议部署AP中继或改用5GHz近距离覆盖。",
+      "article_ref": "wireless-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

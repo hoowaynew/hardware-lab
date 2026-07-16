@@ -73,6 +73,14 @@
       "title": "Q值过高！通带内出现谐振峰 ⚠️",
       "explanation": "Q={q}导致截止频率附近增益 peaked 到 {gainPeak}dB。\n高Q值使滤波器在fc附近产生谐振尖峰，甚至可能自激振荡。\nButterworth响应Q=0.707是最平坦通带。",
       "article_ref": "signal-003"
+    },
+    {
+      "condition": "q < 0.4 && gain < 0.3",
+      "type": "SK_Q_TOO_LOW",
+      "title": "Q值过低！滤波器响应平坦但截止缓慢 ⚠️",
+      "explanation": "Q={q}过低导致过渡带过宽。调整R1/R2比值提高Q值至0.707(Bessel响应)。",
+      "article_ref": "signal-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

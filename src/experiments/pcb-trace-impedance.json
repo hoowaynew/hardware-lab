@@ -72,6 +72,14 @@
       "title": "阻抗失配！信号反射 ⚠️",
       "explanation": "走线阻抗 {impedance}Ω 偏离目标50Ω过大。\n高频信号会产生反射，导致信号完整性问题。\n调整W和H使阻抗接近50Ω。",
       "article_ref": "pcb-001"
+    },
+    {
+      "condition": "substrateEr < 3 || substrateEr > 6",
+      "type": "PCB_SUBSTRATE_EXTREME",
+      "title": "基板介电常数异常！⚠️",
+      "explanation": "εr={substrateEr}偏离FR4典型值(4.4)，阻抗计算偏差大。使用标准FR4或 Rogers板材。",
+      "article_ref": "pcb-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

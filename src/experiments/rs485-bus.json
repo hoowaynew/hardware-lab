@@ -28,8 +28,20 @@
     {
       "type": "toggle",
       "property": "rsBaudrate",
-      "values": [9600, 19200, 115200, 1000000, 10000000],
-      "labels": ["9.6k", "19.2k", "115.2k", "1M", "10M"],
+      "values": [
+        9600,
+        19200,
+        115200,
+        1000000,
+        10000000
+      ],
+      "labels": [
+        "9.6k",
+        "19.2k",
+        "115.2k",
+        "1M",
+        "10M"
+      ],
       "label": "波特率 (bps)"
     },
     {
@@ -45,8 +57,14 @@
     {
       "type": "toggle",
       "property": "rsTerminator",
-      "values": [true, false],
-      "labels": ["有终端电阻", "无终端电阻"],
+      "values": [
+        true,
+        false
+      ],
+      "labels": [
+        "有终端电阻",
+        "无终端电阻"
+      ],
       "label": "终端电阻 (120Ω)"
     },
     {
@@ -67,6 +85,14 @@
       "title": "无终端电阻！信号反射严重 ⚠️",
       "explanation": "波特率 {baudrate} bps 下无终端电阻。\n信号到达线缆末端被反射，产生振铃。\nRS-485必须在总线两端各加120Ω终端电阻。",
       "article_ref": "comm-003"
+    },
+    {
+      "condition": "unitLoad > 32",
+      "type": "RS485_OVERLOADED",
+      "title": "总线过载！节点数超限 ⚠️",
+      "explanation": "当前等效{unitLoad}个单位负载，超过RS-485最大32个UL限制。使用低负载收发器(1/8 UL)或加中继器。",
+      "article_ref": "comm-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

@@ -71,15 +71,31 @@
     {
       "type": "toggle",
       "property": "dpTargetImpedance",
-      "values": [90, 100, 120],
-      "labels": ["90Ω (USB)", "100Ω (LVDS)", "120Ω (RS485)"],
+      "values": [
+        90,
+        100,
+        120
+      ],
+      "labels": [
+        "90Ω (USB)",
+        "100Ω (LVDS)",
+        "120Ω (RS485)"
+      ],
       "label": "目标差分阻抗"
     },
     {
       "type": "toggle",
       "property": "dpSignalFreq",
-      "values": [480, 5000, 10000],
-      "labels": ["480MHz (USB2)", "5GHz (USB3)", "10GHz (PCIe)"],
+      "values": [
+        480,
+        5000,
+        10000
+      ],
+      "labels": [
+        "480MHz (USB2)",
+        "5GHz (USB3)",
+        "10GHz (PCIe)"
+      ],
       "label": "信号频率"
     }
   ],
@@ -90,6 +106,14 @@
       "title": "差分走线设计问题 ⚠️",
       "explanation": "检查阻抗偏差、长度失配和线距是否符合高速设计规范。",
       "article_ref": "pcb-003"
+    },
+    {
+      "condition": "couplingK > 0.5 && modeConversionDb < -20",
+      "type": "DP_OVER_COUPLING",
+      "title": "差分对耦合过强！⚠️",
+      "explanation": "耦合系数K={couplingK}过高，差模/共模转换恶化。增大线间距或减小介质厚度。",
+      "article_ref": "pcb-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

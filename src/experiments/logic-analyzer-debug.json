@@ -28,8 +28,16 @@
       "type": "select",
       "property": "laCpol",
       "options": [
-        { "value": 0, "icon": "0", "label": "空闲低" },
-        { "value": 1, "icon": "1", "label": "空闲高" }
+        {
+          "value": 0,
+          "icon": "0",
+          "label": "空闲低"
+        },
+        {
+          "value": 1,
+          "icon": "1",
+          "label": "空闲高"
+        }
       ],
       "default": 0,
       "label": "CPOL (时钟极性)"
@@ -38,8 +46,16 @@
       "type": "select",
       "property": "laCpha",
       "options": [
-        { "value": 0, "icon": "0", "label": "第一边沿" },
-        { "value": 1, "icon": "1", "label": "第二边沿" }
+        {
+          "value": 0,
+          "icon": "0",
+          "label": "第一边沿"
+        },
+        {
+          "value": 1,
+          "icon": "1",
+          "label": "第二边沿"
+        }
       ],
       "default": 0,
       "label": "CPHA (时钟相位)"
@@ -72,6 +88,14 @@
       "title": "SPI模式不匹配！数据错位 ⚠️",
       "explanation": "主机用 Mode {actualMode}，从机期望 Mode {expectedMode}。\nCPOL/CPHA不一致导致采样边沿错误，数据全乱。\n确认主从双方使用相同的SPI模式。",
       "article_ref": "debug-001"
+    },
+    {
+      "condition": "sampleRate < signalFreq * 2",
+      "type": "LA_UNDERSAMPLING",
+      "title": "采样率不足！波形失真 ⚠️",
+      "explanation": "采样率{sampleRate}Hz低于信号频率{signalFreq}Hz的2倍（奈奎斯特准则）。提高采样率至少2倍以上。",
+      "article_ref": "debug-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

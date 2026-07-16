@@ -56,8 +56,14 @@
     {
       "type": "toggle",
       "property": "ccMode",
-      "values": ["charge", "discharge"],
-      "labels": ["充电", "放电"],
+      "values": [
+        "charge",
+        "discharge"
+      ],
+      "labels": [
+        "充电",
+        "放电"
+      ],
       "label": "充/放电模式"
     }
   ],
@@ -68,6 +74,14 @@
       "title": "充电太慢了！⏱️",
       "explanation": "τ = RC = {tau}s，5τ = {fiveTau}s 才能充满。\n如果需要快速响应，减小R或C。",
       "article_ref": "timing-004"
+    },
+    {
+      "condition": "voltage > vcc * 1.5",
+      "type": "CC_OVERVOLTAGE",
+      "title": "电容过压！💥",
+      "explanation": "电容额定电压应≥电源电压的1.5倍。当前电压{voltage}V可能击穿介质，选择更高耐压的电容。",
+      "article_ref": "analog-001",
+      "animation": "smoke"
     }
   ],
   "targets": {

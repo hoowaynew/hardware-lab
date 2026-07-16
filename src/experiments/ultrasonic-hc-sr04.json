@@ -49,22 +49,46 @@
     {
       "type": "toggle",
       "property": "usObstacleType",
-      "values": ["flat", "soft", "angled", "mesh"],
-      "labels": ["硬质平面", "软质材料", "倾斜面", "网格/多孔"],
+      "values": [
+        "flat",
+        "soft",
+        "angled",
+        "mesh"
+      ],
+      "labels": [
+        "硬质平面",
+        "软质材料",
+        "倾斜面",
+        "网格/多孔"
+      ],
       "label": "障碍物类型"
     },
     {
       "type": "toggle",
       "property": "usEchoPinMode",
-      "values": ["input_floating", "input_pullup", "input_pulldown"],
-      "labels": ["浮空输入", "上拉输入", "下拉输入"],
+      "values": [
+        "input_floating",
+        "input_pullup",
+        "input_pulldown"
+      ],
+      "labels": [
+        "浮空输入",
+        "上拉输入",
+        "下拉输入"
+      ],
       "label": "Echo引脚模式"
     },
     {
       "type": "toggle",
       "property": "usFilter",
-      "values": [true, false],
-      "labels": ["中值滤波", "无滤波"],
+      "values": [
+        true,
+        false
+      ],
+      "labels": [
+        "中值滤波",
+        "无滤波"
+      ],
       "label": "软件滤波"
     }
   ],
@@ -75,6 +99,14 @@
       "title": "测距异常！⚠️",
       "explanation": "检查距离是否在量程内、障碍物反射率是否足够、温度补偿是否正确。",
       "article_ref": "sensor-003"
+    },
+    {
+      "condition": "noiseJitter > 5 && targetDistance < 10",
+      "type": "US_NOISE_INTERFERENCE",
+      "title": "噪声干扰严重！测距不稳定 ⚠️",
+      "explanation": "近距离{targetDistance}cm下噪声抖动{noiseJitter}cm过大。增加多次采样取中值滤波。",
+      "article_ref": "sensor-001",
+      "animation": "highlight"
     }
   ],
   "targets": {

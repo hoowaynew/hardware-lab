@@ -57,8 +57,14 @@
     {
       "type": "toggle",
       "property": "rfInputType",
-      "values": ["square", "sine"],
-      "labels": ["方波", "正弦波"],
+      "values": [
+        "square",
+        "sine"
+      ],
+      "labels": [
+        "方波",
+        "正弦波"
+      ],
       "label": "输入波形"
     }
   ],
@@ -69,6 +75,14 @@
       "title": "信号直接通过，没有滤波效果",
       "explanation": "输入频率 {inputFreq}Hz 低于截止频率 {cutoffFreq}Hz，信号几乎无衰减通过。\n提高输入频率才能看到滤波效果。",
       "article_ref": "signal-001"
+    },
+    {
+      "condition": "cutoffFreq > signalFreq * 5",
+      "type": "RF_CUTOFF_TOO_HIGH",
+      "title": "截止频率过高！滤波无效 ⚠️",
+      "explanation": "fc={cutoffFreq}Hz远高于信号频率{signalFreq}Hz，信号和噪声都会通过。减小R或C以降低截止频率。",
+      "article_ref": "signal-001",
+      "animation": "highlight"
     }
   ],
   "targets": {
