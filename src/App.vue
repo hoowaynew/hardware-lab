@@ -182,7 +182,7 @@
           <div
             v-for="exp in experimentsByDifficulty"
             :key="exp.id"
-            class="category-card exp-by-diff"
+            class="category-card cat-available exp-by-diff"
             @click="loadExperiment(exp.id)"
           >
             <span class="cat-icon">{{ exp.icon }}</span>
@@ -2102,6 +2102,7 @@ body {
   padding: 1px 6px;
   border-radius: 8px;
   font-weight: bold;
+  border: 1px solid currentColor;
 }
 .diff-badge.beginner { background: rgba(46,204,113,0.2); color: #2ecc71; }
 .diff-badge.intermediate { background: rgba(241,196,15,0.2); color: #f1c40f; }
