@@ -16,7 +16,7 @@
           </button>
         </div>
       </div>
-      <p class="app-subtitle">交互式硬件原理实验平台 · 21个实验 · 11大分类</p>
+      <p class="app-subtitle">交互式硬件原理实验平台 · 35个实验 · 11大分类</p>
 
       <!-- 搜索栏 -->
       <div class="search-bar">
@@ -1552,13 +1552,13 @@ function checkSuccess() {
   if (!store.hasError) {
     const expId = currentExpId.value
     if (!progress.completed[expId]) {
-      progress.complete(expId, true)
+      progress.complete(expId, true, store.currentExperiment?.category)
       successMessage.value = '完美通关！无错误完成实验 ⭐⭐⭐'
       showSuccessToast.value = true
       sfx.success()
       setTimeout(() => { showSuccessToast.value = false }, 2500)
     } else if (!progress.completed[expId]?.firstErrorFree) {
-      progress.complete(expId, true)
+      progress.complete(expId, true, store.currentExperiment?.category)
       successMessage.value = '完美通关！首次无错误 ⭐⭐⭐'
       showSuccessToast.value = true
       sfx.success()
@@ -1575,7 +1575,7 @@ watch(() => store.errors, (errors) => {
     progress.recordError()
     // 记录进度（有错误也算完成，但只有1星）
     if (!progress.completed[currentExpId.value]) {
-      progress.complete(currentExpId.value, false)
+      progress.complete(currentExpId.value, false, store.currentExperiment?.category)
     }
     // 错误音效
     const errType = errors[0]?.type || ''
@@ -1737,6 +1737,77 @@ const statusText = computed(() => {
     const lc = results.LC1
     if (lc?.error) return `⚠️ ${lc.errorTitle || 'LC异常'}`
     return `✅ f₀=${lc?.f0Display || '—'}Hz | Q=${(lc?.q || 0).toFixed(1)} | 增益=${((lc?.gain || 0) * 100).toFixed(1)}%`
+  }
+  if (currentExpId.value === 'mosfet-switch') {
+    const m = results.M1
+    if (m?.error) return `⚠️ ${m.errorTitle || 'MOSFET异常'}`
+    const regionMap = { ohmic: '导通(欧姆区)', linear: '线性区', cutoff: '截止(OFF)', saturation: '饱和区' }
+    return `✅ ${regionMap[m?.region] || '运行中'} | Vgs=${(m?.vgs || 0).toFixed(1)}V | Rds=${(m?.rdsActual || 0).toFixed(2)}Ω | P=${(m?.powerDissipation || 0).toFixed(2)}W`
+  }
+  if (currentExpId.value === 'relay-driver') {
+    const rl = results.RL1
+    if (rl?.error) return `⚠️ ${rl.errorTitle || '继电器异常'}`
+    return `${rl?.hasFlyback ? '✅' : '⚠️ 无续流'} ${rl?.state === 'on' ? '吸合' : '释放'} | I线圈=${(rl?.coilCurrent || 0).toFixed(0)}mA | 反压=${rl?.hasFlyback ? '已吸收' : (rl?.flybackSpike || 0).toFixed(0) + 'V'}`
+  }
+  if (currentExpId.value === 'r2r-dac') {
+    const dac = results.DAC1
+    if (dac?.error) return `⚠️ ${dac.errorTitle || 'DAC异常'}`
+    return `✅ Vout=${(dac?.vout || 0).toFixed(3)}V | ${dac?.bits}位 | 输入=0x${(dac?.digitalInput || 0).toString(16).toUpperCase()} | LSB=${(dac?.lsb || 0).toFixed(4)}V`
+  }
+  if (currentExpId.value === 'adc-sampling') {
+    const adc = results.ADC1
+    if (adc?.error) return `⚠️ ${adc.errorTitle || 'ADC异常'}`
+    return `✅ ${adc?.bits}位 | Vin=${(adc?.inputV || 0).toFixed(3)}V → 码值=${adc?.digitalCode}/${adc?.maxCode} | SNR=${(adc?.snr || 0).toFixed(1)}dB`
+  }
+  if (currentExpId.value === 'pcb-ground-loop') {
+    const pcb = results.PCB1
+    if (pcb?.error) return `⚠️ ${pcb.errorTitle || '地平面异常'}`
+    return `✅ EMI=${pcb?.emiLevel || 0}dBμV | 环路=${(pcb?.loopArea || 0).toFixed(1)}mm² | 回流=${pcb?.returnLen || 0}mm | ${pcb?.groundType || '—'}`
+  }
+  if (currentExpId.value === 'oscilloscope-probe') {
+    const probe = results.PROBE1
+    if (probe?.error) return `⚠️ ${probe.errorTitle || '探头异常'}`
+    return `✅ ${probe?.attenuation || '1x'} | 补偿=${probe?.compensation || '—'} | 带宽=${probe?.bandwidth || 0}MHz | 上升=${(probe?.riseTime || 0).toFixed(1)}ns`
+  }
+  if (currentExpId.value === 'ble-link-budget') {
+    const ble = results.BLE1
+    if (ble?.error) return `⚠️ ${ble.errorTitle || 'BLE异常'}`
+    return `✅ RSSI=${ble?.rssi || 0}dBm | 质量=${ble?.quality || 0}% | FSPL=${(ble?.fspl || 0).toFixed(0)}dB | ${ble?.obstacleName || '无障碍'}`
+  }
+  if (currentExpId.value === 'rs485-bus') {
+    const rs = results.RS1
+    if (rs?.error) return `⚠️ ${rs.errorTitle || 'RS-485异常'}`
+    return `${rs?.hasTerminator ? '✅' : '⚠️ 无终端'} 眼图=${rs?.eyeQuality || 0}% | ${rs?.baudrate || 0}bps | 线长=${rs?.cableLength || 0}m | 振铃=${rs?.ringing ? '有' : '无'}`
+  }
+  if (currentExpId.value === 'sallen-key-filter') {
+    const sk = results.SK1
+    if (sk?.error) return `⚠️ ${sk.errorTitle || 'Sallen-Key异常'}`
+    return `✅ fc=${(sk?.fc || 0).toFixed(0)}Hz | Q=${(sk?.q || 0).toFixed(2)} | 增益=${(sk?.gainDb || 0).toFixed(1)}dB | 衰减=${(sk?.attenuationDb || 0).toFixed(1)}dB`
+  }
+  if (currentExpId.value === 'dma-transfer') {
+    const dma = results.DMA1
+    if (dma?.error) return `⚠️ ${dma.errorTitle || 'DMA异常'}`
+    return `✅ ${dma?.mode || '—'} | DMA=${(dma?.dmaTimeUs || 0).toFixed(0)}μs vs CPU=${(dma?.cpuPollTimeUs || 0).toFixed(0)}μs | 突发=${dma?.totalBursts || 0}×${dma?.bytesPerBurst || 0}B`
+  }
+  if (currentExpId.value === 'ultrasonic-hc-sr04') {
+    const us = results.US1
+    if (us?.error) return `⚠️ ${us.errorTitle || '超声波异常'}`
+    return `${us?.detectable ? '✅' : '⚠️ 超量程'} 距离=${us?.targetDistance || 0}cm | 回波=${(us?.echoTimeUs || 0).toFixed(0)}μs | 声速=${(us?.soundSpeed || 0).toFixed(0)}m/s`
+  }
+  if (currentExpId.value === 'diff-pair-routing') {
+    const dp = results.DP1
+    if (dp?.error) return `⚠️ ${dp.errorTitle || '差分走线异常'}`
+    return `✅ Zdiff=${(dp?.zDiff || 0).toFixed(1)}Ω | Skew=${(dp?.maxSkewPs || 0).toFixed(1)}ps | 眼高=${dp?.eyeHeightPct || 0}% | 串扰=${(dp?.modeConversionDb || 0).toFixed(1)}dB`
+  }
+  if (currentExpId.value === 'lora-link-budget') {
+    const lr = results.LR1
+    if (lr?.error) return `⚠️ ${lr.errorTitle || 'LoRa异常'}`
+    return `✅ RSSI=${lr?.rssi || 0}dBm | 余量=${(lr?.linkMargin || 0).toFixed(1)}dB | SF${lr?.sf} BW=${lr?.bw || 0}kHz | 空中=${(lr?.symbolTimeMs || 0).toFixed(0)}ms`
+  }
+  if (currentExpId.value === 'jtag-boundary-scan') {
+    const jt = results.JT1
+    if (jt?.error) return `⚠️ ${jt.errorTitle || 'JTAG异常'}`
+    return `✅ 覆盖率=${jt?.faultCoverage || 0}% | 器件=${jt?.deviceCount || 0} | 可测引脚=${jt?.pinsTestable || 0} | 扫描=${(jt?.scanTimeUs || 0).toFixed(0)}μs`
   }
   return '✅ 实验运行中'
 })

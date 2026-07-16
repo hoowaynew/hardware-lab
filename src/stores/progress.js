@@ -8,7 +8,8 @@ export const useProgressStore = defineStore('progress', {
     completed: {},     // experimentId -> { stars, firstErrorFree, completions }
     achievements: [],  // unlocked achievement ids
     totalScore: 0,
-    errorCount: 0      // 总触发错误次数
+    errorCount: 0,     // 总触发错误次数
+    completedCategories: []  // 已覆盖的分类ID列表
   }),
 
   getters: {
@@ -32,10 +33,15 @@ export const useProgressStore = defineStore('progress', {
       { id: 'first-complete', name: '💡 亮灯人', desc: '完成第一个实验' },
       { id: 'three-done', name: '🔧 初出茅庐', desc: '完成3个实验' },
       { id: 'six-done', name: '⚙️ 小有所成', desc: '完成6个实验' },
+      { id: 'twelve-done', name: '🔩 渐入佳境', desc: '完成12个实验' },
+      { id: 'twenty-done', name: '📐 过半里程碑', desc: '完成20个实验' },
       { id: 'all-done', name: '🏆 硬件达人', desc: '完成全部35个实验' },
       { id: 'perfect-three', name: '⭐ 完美主义', desc: '3个实验无错误通关' },
       { id: 'perfect-six', name: '✨ 精益求精', desc: '6个实验无错误通关' },
-      { id: 'perfect-all', name: '👑 零失误大师', desc: '全部35个实验无错误通关' }
+      { id: 'perfect-twelve', name: '💎 匠人之心', desc: '12个实验无错误通关' },
+      { id: 'perfect-all', name: '👑 零失误大师', desc: '全部35个实验无错误通关' },
+      { id: 'error-explorer', name: '🧪 试错专家', desc: '累计触发10次错误（探索精神）' },
+      { id: 'category-master', name: '🎯 分类全才', desc: '11个分类都至少完成1个实验' }
     ]
   },
 
@@ -49,13 +55,14 @@ export const useProgressStore = defineStore('progress', {
           this.achievements = data.achievements || []
           this.totalScore = data.totalScore || 0
           this.errorCount = data.errorCount || 0
+          this.completedCategories = data.completedCategories || []
         }
       } catch (e) {
         console.warn('Failed to load progress:', e)
       }
     },
 
-    complete(experimentId, errorFree = false) {
+    complete(experimentId, errorFree = false, categoryId = null) {
       const existing = this.completed[experimentId] || { stars: 0, completions: 0 }
       const stars = errorFree ? 3 : (existing.stars > 0 ? existing.stars : 1)
 
@@ -64,6 +71,11 @@ export const useProgressStore = defineStore('progress', {
         firstErrorFree: existing.firstErrorFree || errorFree,
         completions: existing.completions + 1,
         lastCompleted: Date.now()
+      }
+
+      // 跟踪已覆盖分类
+      if (categoryId && !this.completedCategories.includes(categoryId)) {
+        this.completedCategories.push(categoryId)
       }
 
       this.checkAchievements(experimentId, errorFree)
@@ -82,10 +94,15 @@ export const useProgressStore = defineStore('progress', {
         'first-complete': () => this.completedCount >= 1,
         'three-done': () => this.completedCount >= 3,
         'six-done': () => this.completedCount >= 6,
+        'twelve-done': () => this.completedCount >= 12,
+        'twenty-done': () => this.completedCount >= 20,
         'all-done': () => this.completedCount >= TOTAL_EXPERIMENTS,
         'perfect-three': () => this.perfectCount >= 3,
         'perfect-six': () => this.perfectCount >= 6,
-        'perfect-all': () => this.perfectCount >= TOTAL_EXPERIMENTS
+        'perfect-twelve': () => this.perfectCount >= 12,
+        'perfect-all': () => this.perfectCount >= TOTAL_EXPERIMENTS,
+        'error-explorer': () => this.errorCount >= 10,
+        'category-master': () => this.completedCategories.length >= 11
       }
 
       for (const [id, cond] of Object.entries(conditions)) {
@@ -101,7 +118,8 @@ export const useProgressStore = defineStore('progress', {
           completed: this.completed,
           achievements: this.achievements,
           totalScore: this.totalScore,
-          errorCount: this.errorCount
+          errorCount: this.errorCount,
+          completedCategories: this.completedCategories
         }))
       } catch (e) {
         console.warn('Failed to save progress:', e)
@@ -113,6 +131,7 @@ export const useProgressStore = defineStore('progress', {
       this.achievements = []
       this.totalScore = 0
       this.errorCount = 0
+      this.completedCategories = []
       this.save()
     },
 

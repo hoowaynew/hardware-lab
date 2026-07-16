@@ -568,5 +568,61 @@ export const challengeData = {
         detail: `覆盖率=${coverage}%, 器件=${devices}, 错误=${hasError}`
       }
     }
+  },
+
+  'i2c-signal': {
+    title: '挑战：完整I2C读写时序',
+    goal: '完成START→地址→ACK→数据→ACK→STOP全流程',
+    constraint: '从机地址必须为0x50',
+    timeLimit: 60,
+    check: (result) => {
+      const i2c = result?.results?.I2C1
+      const step = i2c?.step ?? 'idle'
+      const addr = i2c?.address ?? '0x00'
+      const hasError = i2c?.error ? true : false
+      const addrOk = addr === '0x50'
+      const completed = step === 'stop' || step === 'idle'
+      return {
+        passed: completed && addrOk && !hasError,
+        score: Math.max(0, 100 - (hasError ? 40 : 0) - (!addrOk ? 30 : 0) - (!completed ? 50 : 0)),
+        detail: `步骤=${step}, 地址=${addr}, 错误=${hasError}`
+      }
+    }
+  },
+
+  'pcb-trace-impedance': {
+    title: '挑战：50Ω阻抗精准匹配',
+    goal: '走线阻抗偏差≤±2Ω',
+    constraint: '目标阻抗50Ω，FR4基板(εr=4.4)',
+    timeLimit: 45,
+    check: (result) => {
+      const pcb = result?.results?.PCB1
+      const impedance = pcb?.impedance ?? 0
+      const deviation = Math.abs(pcb?.deviation ?? 999)
+      const hasError = pcb?.error ? true : false
+      return {
+        passed: deviation <= 2 && !hasError,
+        score: Math.max(0, 100 - deviation * 10 - (hasError ? 30 : 0)),
+        detail: `阻抗=${impedance}Ω, 偏差=${deviation}Ω, 错误=${hasError}`
+      }
+    }
+  },
+
+  'wifi-signal-attenuation': {
+    title: '挑战：远距离WiFi稳定连接',
+    goal: 'RSSI≥-70dBm，链路余量≥10dB',
+    constraint: '距离≥15m，至少穿1墙',
+    timeLimit: 60,
+    check: (result) => {
+      const wifi = result?.results?.WIFI1
+      const rssi = wifi?.rssi ?? -999
+      const margin = wifi?.margin ?? -999
+      const hasError = wifi?.error ? true : false
+      return {
+        passed: rssi >= -70 && margin >= 10 && !hasError,
+        score: Math.max(0, rssi + 100 + margin - (hasError ? 30 : 0)),
+        detail: `RSSI=${rssi}dBm, 余量=${margin}dB, 错误=${hasError}`
+      }
+    }
   }
 }

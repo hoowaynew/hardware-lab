@@ -48,12 +48,12 @@ export const hintsData = {
     'Vout=Vcc×Rntc/(Rpullup+Rntc)，ADC=Vout/Vcc×4095(12位)',
     '答案：25°C时Rntc=10kΩ=Rpullup，Vout=1.65V，ADC≈2048；85°C时Rntc≈1.4kΩ，Vout≈0.41V，ADC≈512'
   ],
-  'pcb-trace': [
+  'pcb-trace-impedance': [
     '50Ω阻抗需要特定的线宽和介质厚度组合',
     '微带线Z0≈87/√(εr+1.41)×ln(5.98H/(0.8W+T))，εr=4.4(FR4)',
     '答案：JLC04161H板厚0.1mm时，50Ω线宽≈0.2mm；板厚0.2mm时线宽≈0.38mm'
   ],
-  'wifi-attenuation': [
+  'wifi-signal-attenuation': [
     '链路预算：发射功率减去路径损耗和障碍衰减等于接收功率',
     'FSPL(dB)=20log10(d)+20log10(f_MHz)+32.44，RSSI=TxPower-FSPL-WallLoss',
     '答案：2.4GHz 10米 FSPL≈60dB，穿1墙(-8dB)，TxPower=20dBm → RSSI=20-60-8=-48dBm(优秀)'
