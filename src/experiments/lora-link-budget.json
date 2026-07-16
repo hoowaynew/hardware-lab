@@ -1,0 +1,95 @@
+{
+  "id": "lora-link-budget",
+  "topic_id": "wireless-003",
+  "title": "LoRa扩频通信：SF/BW/CR与链路预算",
+  "category": "wireless",
+  "difficulty": "intermediate",
+  "description": "调扩频因子、带宽和编码率，看LoRa能传多远、传多快、耗多少电。",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "lora-link",
+        "id": "LR1",
+        "x": 200,
+        "y": 140,
+        "label": "LoRa节点",
+        "defaultSF": 7,
+        "defaultBW": 125,
+        "defaultCR": 5,
+        "defaultTxPower": 14,
+        "defaultDistance": 5,
+        "defaultPayload": 20,
+        "defaultNoiseFloor": -120
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "toggle",
+      "property": "loraSF",
+      "values": [7, 8, 9, 10, 11, 12],
+      "labels": ["SF7", "SF8", "SF9", "SF10", "SF11", "SF12"],
+      "label": "扩频因子"
+    },
+    {
+      "type": "toggle",
+      "property": "loraBW",
+      "values": [62.5, 125, 250, 500],
+      "labels": ["62.5kHz", "125kHz", "250kHz", "500kHz"],
+      "label": "带宽"
+    },
+    {
+      "type": "toggle",
+      "property": "loraCR",
+      "values": [5, 6, 7, 8],
+      "labels": ["4/5", "4/6", "4/7", "4/8"],
+      "label": "编码率"
+    },
+    {
+      "type": "slider",
+      "property": "loraTxPower",
+      "min": 2,
+      "max": 20,
+      "step": 1,
+      "default": 14,
+      "unit": "dBm",
+      "label": "发射功率"
+    },
+    {
+      "type": "slider",
+      "property": "loraDistance",
+      "min": 0.5,
+      "max": 20,
+      "step": 0.5,
+      "default": 5,
+      "unit": "km",
+      "label": "通信距离"
+    },
+    {
+      "type": "slider",
+      "property": "loraPayload",
+      "min": 1,
+      "max": 51,
+      "step": 1,
+      "default": 20,
+      "unit": "bytes",
+      "label": "负载长度"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "linkMargin < 0 || airTimeMs > 3000 || (sf > 10 && bw >= 250)",
+      "type": "LORA_CONFIG_ERROR",
+      "title": "LoRa配置问题 ⚠️",
+      "explanation": "检查链路预算、空中时间和SF/BW组合是否合理。",
+      "article_ref": "wireless-003"
+    }
+  ],
+  "targets": {
+    "perfect": "链路余量 > 15dB，空中时间 < 500ms",
+    "hint": "Ts = 2^SF / BW，SF越大传越远但越慢"
+  }
+}

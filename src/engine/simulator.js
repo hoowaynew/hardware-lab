@@ -248,7 +248,12 @@ export class Simulator {
       'oscilloscope-probe': () => this._simulateOscilloscopeProbe(comp),
       'ble-link': () => this._simulateBLELink(comp),
       'rs485-bus': () => this._simulateRS485(comp),
-      'sallen-key-filter': () => this._simulateSallenKey(comp)
+      'sallen-key-filter': () => this._simulateSallenKey(comp),
+      'dma-transfer': () => this._simulateDMA(comp),
+      'ultrasonic-sensor': () => this._simulateUltrasonic(comp),
+      'diff-pair-routing': () => this._simulateDiffPair(comp),
+      'lora-link': () => this._simulateLoRa(comp),
+      'jtag-boundary': () => this._simulateJTAG(comp)
     }
 
     const handler = handlers[comp.type]
@@ -2384,5 +2389,462 @@ export class Simulator {
     }
 
     return result
+  }
+
+  /**
+   * DMA数据传输仿真
+   * 对比CPU轮询 vs DMA直传效率
+   */
+  _simulateDMA(comp) {
+    const src = this._getParam(comp, 'dmaSrc', 'memory')
+    const dst = this._getParam(comp, 'dmaDst', 'uart')
+    const transferSize = this._getParam(comp, 'dmaTransferSize', 256)
+    const dataWidth = this._getParam(comp, 'dmaDataWidth', 8)
+    const burstSize = this._getParam(comp, 'dmaBurstSize', 4)
+    const mode = this._getParam(comp, 'dmaMode', 'normal')
+    const clockFreq = this._getParam(comp, 'dmaClockFreq', 72) // MHz
+
+    // DMA transfer time: bytes / (clock × burst efficiency)
+    // Each burst transfers burstSize × (dataWidth/8) bytes
+    const bytesPerBurst = burstSize * (dataWidth / 8)
+    const burstCycles = 2 + burstSize // setup + transfer cycles per burst
+    const totalBursts = Math.ceil(transferSize / bytesPerBurst)
+    const dmaCycles = totalBursts * burstCycles
+    const dmaTimeUs = dmaCycles / clockFreq // μs
+
+    // CPU polling: ~20 cycles per byte (read-write-check loop)
+    const cpuPollCycles = transferSize * 20
+    const cpuPollTimeUs = cpuPollCycles / clockFreq
+    const cpuUsagePoll = Math.min(100, (cpuPollCycles / (clockFreq * 1000)) * 100) // % of 1ms window
+
+    // DMA CPU usage: only config overhead (~50 cycles total)
+    const dmaCpuUsage = mode === 'double-buffer' ? 0.5 : 0.1
+
+    // FIFO depth (typical STM32: 4 words = 16 bytes)
+    const fifoDepth = 16
+    const fifoOverflow = burstSize * (dataWidth / 8) > fifoDepth
+
+    // Throughput
+    const dmaThroughput = transferSize / (dmaTimeUs / 1e6) // bytes/s
+    const cpuThroughput = transferSize / (cpuPollTimeUs / 1e6)
+
+    // Bandwidth utilization
+    const bandwidthPct = Math.min(100, (dmaThroughput / (clockFreq * 1e6 / 2)) * 100)
+
+    // Efficiency comparison
+    const speedupFactor = cpuPollTimeUs / dmaTimeUs
+
+    // Error conditions
+    let error = null, errorTitle = null, errorExplanation = null
+    if (fifoOverflow) {
+      error = 'DMA_FIFO_OVERFLOW'
+      errorTitle = 'FIFO溢出！数据丢失 ⚠️'
+      errorExplanation = `突发长度${burstSize}×${dataWidth}位=${burstSize * (dataWidth / 8)}字节超过FIFO深度${fifoDepth}字节。\n数据在搬运途中溢出丢失。\n降低突发长度或减小数据位宽。`
+    }
+
+    const srcNames = { memory: '内存(SRAM)', adc: 'ADC DR', spi: 'SPI DR' }
+    const dstNames = { uart: 'UART DR', memory: '内存(SRAM)', dac: 'DAC DHR' }
+    const modeNames = { normal: '单次传输', circular: '循环传输', 'double-buffer': '双缓冲' }
+
+    const result = {
+      src: srcNames[src] || src,
+      dst: dstNames[dst] || dst,
+      transferSize, dataWidth, burstSize,
+      mode: modeNames[mode] || mode,
+      dmaTimeUs: parseFloat(dmaTimeUs.toFixed(2)),
+      cpuPollTimeUs: parseFloat(cpuPollTimeUs.toFixed(2)),
+      cpuUsagePoll: parseFloat(cpuUsagePoll.toFixed(1)),
+      dmaCpuUsage: parseFloat(dmaCpuUsage.toFixed(2)),
+      speedupFactor: parseFloat(speedupFactor.toFixed(1)),
+      dmaThroughput: dmaThroughput > 1e6 ? parseFloat((dmaThroughput / 1e6).toFixed(2)) + ' MB/s' : parseFloat((dmaThroughput / 1e3).toFixed(0)) + ' KB/s',
+      cpuThroughput: cpuThroughput > 1e6 ? parseFloat((cpuThroughput / 1e6).toFixed(2)) + ' MB/s' : parseFloat((cpuThroughput / 1e3).toFixed(0)) + ' KB/s',
+      bandwidthPct: parseFloat(bandwidthPct.toFixed(1)),
+      fifoDepth, fifoOverflow,
+      bytesPerBurst, totalBursts,
+      loadState: 'running',
+      error, errorTitle, errorExplanation
+    }
+
+    return result
+  }
+
+  /**
+   * 超声波HC-SR04测距仿真
+   * d = v × t / 2, v=343m/s
+   */
+  _simulateUltrasonic(comp) {
+    const triggerInterval = this._getParam(comp, 'usTriggerInterval', 100) // ms
+    const temperature = this._getParam(comp, 'usTemperature', 20) // °C
+    const targetDistance = this._getParam(comp, 'usTargetDistance', 50) // cm
+    const echoPinMode = this._getParam(comp, 'usEchoPinMode', 'input_floating')
+    const hasFilter = this._getParam(comp, 'usFilter', true)
+    const obstacleType = this._getParam(comp, 'usObstacleType', 'flat')
+
+    // Speed of sound vs temperature: v = 331.3 + 0.606 × T
+    const soundSpeed = 331.3 + 0.606 * temperature // m/s
+    const soundSpeedCm = soundSpeed * 100 // cm/s
+
+    // Echo time: t = 2d / v
+    const echoTimeUs = (2 * targetDistance / soundSpeedCm) * 1e6 // μs
+    const echoTimeMs = echoTimeUs / 1000
+
+    // Temperature error: using fixed 343m/s at different temps
+    const assumedSpeed = 343 // m/s at 20°C
+    const measuredDistance = targetDistance * (assumedSpeed / soundSpeed) // cm
+    const tempErrorCm = measuredDistance - targetDistance
+    const tempErrorPct = (tempErrorCm / targetDistance) * 100
+
+    // Obstacle absorption
+    const obstacleMap = { flat: 1.0, soft: 0.6, angled: 0.3, mesh: 0.2 }
+    const reflectivity = obstacleMap[obstacleType] || 1.0
+    const echoAmplitude = reflectivity * 100 // % of trigger amplitude
+    const detectionThreshold = 30 // % minimum for reliable detection
+    const detectable = echoAmplitude >= detectionThreshold
+
+    // Pin mode effect: floating pin picks up noise
+    const pinModeNoise = echoPinMode === 'input_floating' ? 0.5 : 0.1 // cm jitter
+    const filteredNoise = hasFilter ? pinModeNoise * 0.2 : pinModeNoise
+
+    // Max range: HC-SR04 spec ~400cm, min ~2cm
+    const maxRange = 400, minRange = 2
+    const inRange = targetDistance >= minRange && targetDistance <= maxRange
+
+    // Measurement rate
+    const maxRate = 1000 / (echoTimeMs + triggerInterval) // Hz
+
+    // Error conditions
+    let error = null, errorTitle = null, errorExplanation = null
+    if (!inRange) {
+      error = 'US_OUT_OF_RANGE'
+      errorTitle = targetDistance < minRange ? '距离太近！低于最小量程 ⚠️' : '距离太远！超出最大量程 ⚠️'
+      errorExplanation = `目标距离${targetDistance}cm超出HC-SR04量程(${minRange}~${maxRange}cm)。\n${targetDistance < minRange ? '回波太快，MCU来不及捕获。' : '回波衰减过大，检测不到。'}`
+    } else if (!detectable) {
+      error = 'US_WEAK_ECHO'
+      errorTitle = '回波太弱！检测失败 ⚠️'
+      errorExplanation = `障碍物反射率${echoAmplitude.toFixed(0)}%低于检测阈值${detectionThreshold}%。\n软质材料/倾斜面/网格状物会大量吸收超声波。\n更换为硬质平面或缩短距离。`
+    } else if (Math.abs(tempErrorCm) > 2) {
+      error = 'US_TEMP_DRIFT'
+      errorTitle = '温度漂移！测距偏差大 ⚠️'
+      errorExplanation = `环境温度${temperature}°C时声速${soundSpeed.toFixed(1)}m/s，\n但代码假设343m/s，导致${tempErrorCm > 0 ? '偏大' : '偏小'}${Math.abs(tempErrorCm).toFixed(2)}cm。\n应使用温度补偿公式: v=331.3+0.606×T。`
+    }
+
+    const obstacleNames = { flat: '硬质平面', soft: '软质材料(布/海绵)', angled: '倾斜面(>15°)', mesh: '网格/多孔' }
+
+    const result = {
+      soundSpeed: parseFloat(soundSpeed.toFixed(1)),
+      echoTimeUs: parseFloat(echoTimeUs.toFixed(1)),
+      echoTimeMs: parseFloat(echoTimeMs.toFixed(3)),
+      targetDistance, measuredDistance: parseFloat(measuredDistance.toFixed(2)),
+      tempErrorCm: parseFloat(tempErrorCm.toFixed(2)),
+      tempErrorPct: parseFloat(tempErrorPct.toFixed(2)),
+      echoAmplitude: parseFloat(echoAmplitude.toFixed(0)),
+      reflectivity: parseFloat((reflectivity * 100).toFixed(0)),
+      obstacleName: obstacleNames[obstacleType] || obstacleType,
+      detectable, detectionThreshold,
+      noiseJitter: parseFloat(filteredNoise.toFixed(2)),
+      pinModeNoise: parseFloat(pinModeNoise.toFixed(2)),
+      hasFilter,
+      maxRate: parseFloat(maxRate.toFixed(1)),
+      inRange, maxRange, minRange,
+      loadState: 'running',
+      error, errorTitle, errorExplanation
+    }
+
+    return result
+  }
+
+  /**
+   * 差分走线等长仿真
+   * USB3.0/MIPI/LVDS差分对设计
+   */
+  _simulateDiffPair(comp) {
+    const diffImpedance = this._getParam(comp, 'dpTargetImpedance', 100) // Ω, differential
+    const traceWidth = this._getParam(comp, 'dpTraceWidth', 0.15) // mm
+    const traceGap = this._getParam(comp, 'dpTraceGap', 0.15) // mm
+    const substrateH = this._getParam(comp, 'dpSubstrateHeight', 0.5) // mm, dielectric thickness
+    const substrateEr = this._getParam(comp, 'dpSubstrateEr', 4.3) // FR4
+    const signalFreq = this._getParam(comp, 'dpSignalFreq', 5000) // MHz
+    const lengthMismatch = this._getParam(comp, 'dpLengthMismatch', 0) // mm
+    const routingMode = this._getParam(comp, 'dpRoutingMode', 'edge-coupled')
+
+    // Edge-coupled microstrip differential impedance
+    // Zdiff ≈ 2×Z0 × (1 - 0.48×e^(-0.96×S/H))
+    // Single-ended Z0 for microstrip: Z0 = 87/sqrt(Er+1.41) × ln(5.98×H/(0.8×W+T))
+    const T = 0.035 // copper thickness mm (1oz)
+    const W = traceWidth
+    const H = substrateH
+    const S = traceGap
+    const er = substrateEr
+
+    // Single-ended impedance
+    const z0 = (87 / Math.sqrt(er + 1.41)) * Math.log(5.98 * H / (0.8 * W + T))
+    // Differential impedance (edge-coupled)
+    const zDiff = 2 * z0 * (1 - 0.48 * Math.exp(-0.96 * S / H))
+    // Impedance error
+    const impError = zDiff - diffImpedance
+    const impErrorPct = (impError / diffImpedance) * 100
+
+    // Skew from length mismatch
+    // Signal velocity on FR4 microstrip ≈ c / sqrt((Er+1)/2)
+    const v = 3e8 / Math.sqrt((er + 1) / 2) // m/s
+    const vMm = v * 1000 // mm/s
+    const skewPs = (lengthMismatch / vMm) * 1e12 // ps
+    // For high-speed: skew should be < 1/(10 × f_max)
+    const maxSkewPs = 1e12 / (10 * signalFreq * 1e6)
+    const skewOk = Math.abs(skewPs) <= maxSkewPs
+
+    // Mode conversion (common-mode noise)
+    // Higher mismatch → more mode conversion
+    const modeConversionDb = 20 * Math.log10(Math.max(0.001, lengthMismatch / (100 + lengthMismatch)))
+
+    // Coupling coefficient
+    const couplingK = 0.48 * Math.exp(-0.96 * S / H)
+
+    // Eye diagram degradation estimate
+    const jitterPs = Math.abs(skewPs) * 0.8
+    const eyeHeightPct = Math.max(20, 100 - Math.abs(impErrorPct) * 2 - Math.abs(skewPs) / maxSkewPs * 30)
+
+    // Error conditions
+    let error = null, errorTitle = null, errorExplanation = null
+    if (Math.abs(impErrorPct) > 10) {
+      error = 'DP_IMPEDANCE_MISMATCH'
+      errorTitle = '差分阻抗偏差过大！信号反射 ⚠️'
+      errorExplanation = `计算阻抗${zDiff.toFixed(1)}Ω，目标${diffImpedance}Ω，偏差${impErrorPct.toFixed(1)}%。\n差分阻抗偏差>10%会导致信号反射和模态转换。\n调整线宽(W=${W}mm)、间距(S=${S}mm)或介质厚度(H=${H}mm)。`
+    } else if (!skewOk) {
+      error = 'DP_SKEW_TOO_LARGE'
+      errorTitle = '长度失配！时序偏斜过大 ⚠️'
+      errorExplanation = `长度差${lengthMismatch}mm产生${skewPs.toFixed(1)}ps偏斜。\n${signalFreq}MHz信号最大允许偏斜${maxSkewPs.toFixed(1)}ps。\n差分对必须严格等长：用蛇形走线补偿长度差。`
+    } else if (traceGap < 0.1) {
+      error = 'DP_GAP_TOO_SMALL'
+      errorTitle = '间距太小！串扰严重 ⚠️'
+      errorExplanation = `线间距${S}mm小于3倍线宽，差分对间耦合过强。\n间距太小会降低单端阻抗、增加制造难度。\n建议间距 ≥ 3W (=${(3*W).toFixed(2)}mm)。`
+    }
+
+    const modeNames = { 'edge-coupled': '边缘耦合微带线', 'broadside': '宽边耦合带状线' }
+
+    const result = {
+      z0: parseFloat(z0.toFixed(1)),
+      zDiff: parseFloat(zDiff.toFixed(1)),
+      targetImpedance: diffImpedance,
+      impError: parseFloat(impError.toFixed(1)),
+      impErrorPct: parseFloat(impErrorPct.toFixed(2)),
+      couplingK: parseFloat(couplingK.toFixed(3)),
+      skewPs: parseFloat(skewPs.toFixed(2)),
+      maxSkewPs: parseFloat(maxSkewPs.toFixed(2)),
+      skewOk,
+      modeConversionDb: parseFloat(modeConversionDb.toFixed(1)),
+      jitterPs: parseFloat(jitterPs.toFixed(2)),
+      eyeHeightPct: parseFloat(eyeHeightPct.toFixed(0)),
+      lengthMismatch, traceWidth: W, traceGap: S, substrateH: H,
+      routingMode: modeNames[routingMode] || routingMode,
+      signalFreq, loadState: 'running',
+      error, errorTitle, errorExplanation
+    }
+
+    return result
+  }
+
+  /**
+   * LoRa扩频通信仿真
+   * SF(Spreading Factor), BW(Bandwidth), CR(Coding Rate)
+   */
+  _simulateLoRa(comp) {
+    const sf = this._getParam(comp, 'loraSF', 7)        // Spreading Factor 6-12
+    const bw = this._getParam(comp, 'loraBW', 125)       // kHz
+    const cr = this._getParam(comp, 'loraCR', 5)         // 4/5 to 4/8, codingRate denominator offset (5-8)
+    const txPower = this._getParam(comp, 'loraTxPower', 14) // dBm
+    const distance = this._getParam(comp, 'loraDistance', 5) // km
+    const payloadSize = this._getParam(comp, 'loraPayload', 20) // bytes
+    const noiseFloor = this._getParam(comp, 'loraNoiseFloor', -120) // dBm
+
+    // Symbol duration: Ts = 2^SF / BW
+    const symbolTimeMs = Math.pow(2, sf) / bw // ms (BW in kHz)
+
+    // Air time calculation
+    // Preamble: 8 symbols (default)
+    const preambleTimeMs = symbolTimeMs * 8
+    // Header: depends on SF
+    const headerSymbols = sf >= 10 ? 20 : 12
+    const headerTimeMs = symbolTimeMs * headerSymbols
+    // Payload symbols: ceil(8*(PL-4*SF+28)/(4*(SF-2*DE))) * CR + 4
+    // DE = 1 when SF >= 11 (low data rate optimization)
+    const de = sf >= 11 ? 1 : 0
+    const numPayloadSymbols = Math.ceil(Math.max(1, (8 * payloadSize - 4 * sf + 28 + 16 * cr - 20) / (4 * (sf - 2 * de)))) * cr + 4
+    const payloadTimeMs = symbolTimeMs * numPayloadSymbols
+    const airTimeMs = preambleTimeMs + headerTimeMs + payloadTimeMs
+
+    // Data rate: DR = SF × BW / 2^SF × (4/(4+CR-4)) → simplified
+    const codingRate = 4 / (4 + cr - 4)
+    const dataRate = sf * bw * 1000 / Math.pow(2, sf) * codingRate // bps
+    const dataRateKbps = dataRate / 1000
+
+    // Link budget
+    // FSPL at sub-GHz: 20log(d_m) + 20log(f_MHz) + 27.55
+    // Use 868MHz as typical EU band
+    const freqMHz = 868
+    const distanceM = distance * 1000
+    const fspl = 20 * Math.log10(Math.max(1, distanceM)) + 20 * Math.log10(freqMHz) + 27.55
+    const rssi = txPower - fspl
+    const snr = rssi - noiseFloor
+
+    // Sensitivity: S = -174 + 10log(BW) + NF + SNR_min
+    // SNR_min depends on SF: SF7≈-7.5dB, SF12≈-20dB
+    const snrMinMap = { 6: -5, 7: -7.5, 8: -10, 9: -12.5, 10: -15, 11: -17.5, 12: -20 }
+    const snrMin = snrMinMap[sf] || -7.5
+    const nf = 6 // noise figure dB
+    const bwHz = bw * 1000
+    const sensitivity = -174 + 10 * Math.log10(bwHz) + nf + snrMin
+    const linkMargin = rssi - sensitivity
+
+    // Maximum distance
+    const totalGain = txPower - sensitivity - 20 * Math.log10(freqMHz) - 27.55
+    const maxDistanceM = Math.pow(10, totalGain / 20)
+    const maxDistanceKm = maxDistanceM / 1000
+
+    // Quality classification
+    let quality
+    if (linkMargin > 20) quality = 'excellent'
+    else if (linkMargin > 10) quality = 'good'
+    else if (linkMargin > 0) quality = 'fair'
+    else quality = 'none'
+
+    // Energy estimate per packet (mA × ms → μC)
+    const txCurrent = 120 // mA typical at 14dBm
+    const energyPerPacket = txCurrent * airTimeMs // mA·ms
+
+    // Error conditions
+    let error = null, errorTitle = null, errorExplanation = null
+    if (linkMargin < 0) {
+      error = 'LORA_LINK_FAIL'
+      errorTitle = '链路预算不足！通信失败 ⚠️'
+      errorExplanation = `RSSI=${rssi.toFixed(1)}dBm低于灵敏度${sensitivity.toFixed(1)}dBm，余量${linkMargin.toFixed(1)}dB。\nSF${sf}在${bw}kHz下最远仅${maxDistanceKm.toFixed(1)}km。\n增大SF(降速换距离)、增大发射功率、或缩短距离。`
+    } else if (airTimeMs > 3000) {
+      error = 'LORA_AIR_TIME_TOO_LONG'
+      errorTitle = '空中时间过长！占空比超限 ⚠️'
+      errorExplanation = `SF${sf}+${bw}kHz+${payloadSize}字节 → 空中时间${airTimeMs.toFixed(0)}ms。\nEU 868MHz频段占空比限制1%，每小时最多36s发射。\n长时间发送也增加碰撞概率和功耗。`
+    } else if (sf > 10 && bw >= 250) {
+      error = 'LORA_SF_BW_MISMATCH'
+      errorTitle = 'SF/BW组合不当 ⚠️'
+      errorExplanation = `SF${sf}配${bw}kHz不推荐。\n高SF应配低BW以获得最大灵敏度，\nSF12+125kHz可覆盖15km+，SF7+250kHz适合高速短距。`
+    }
+
+    const result = {
+      sf, bw, cr: `4/${cr}`, txPower, distance, payloadSize,
+      symbolTimeMs: parseFloat(symbolTimeMs.toFixed(2)),
+      airTimeMs: parseFloat(airTimeMs.toFixed(1)),
+      dataRate: dataRateKbps > 1 ? parseFloat(dataRateKbps.toFixed(2)) + ' kbps' : parseFloat(dataRate.toFixed(0)) + ' bps',
+      rssi: parseFloat(rssi.toFixed(1)),
+      snr: parseFloat(snr.toFixed(1)),
+      sensitivity: parseFloat(sensitivity.toFixed(1)),
+      linkMargin: parseFloat(linkMargin.toFixed(1)),
+      maxDistanceKm: parseFloat(maxDistanceKm.toFixed(1)),
+      quality, snrMin,
+      energyPerPacket: parseFloat(energyPerPacket.toFixed(0)),
+      loadState: 'running',
+      error, errorTitle, errorExplanation
+    }
+
+    return result
+  }
+
+  /**
+   * JTAG/SWD边界扫描仿真
+   * TAP控制器状态机 + 边界扫描测试
+   */
+  _simulateJTAG(comp) {
+    const scanMode = this._getParam(comp, 'jtagScanMode', 'extest')
+    const deviceCount = this._getParam(comp, 'jtagDeviceCount', 1)
+    const chainLength = this._getParam(comp, 'jtagChainLength', 128) // total boundary cells
+    const tckFreq = this._getParam(comp, 'jtagTckFreq', 10) // MHz
+    const hasPullup = this._getParam(comp, 'jtagPullup', true)
+    const signalIntegrity = this._getParam(comp, 'jtagSignalIntegrity', 'good')
+
+    // TAP state machine: 16 states, each takes 1 TCK cycle to transition
+    // To scan IR: Capture-IR → Shift-IR → Exit1-IR → Update-IR (4 + IR_length cycles)
+    // To scan DR: Capture-DR → Shift-DR → Exit1-DR → Update-DR (4 + DR_length cycles)
+    // IR length typically 4 bits per device, DR = boundary register length
+
+    const irLength = deviceCount * 4
+    const drLength = chainLength
+
+    // Total scan cycles: go to Shift-IR (5 TCK) + IR shift + go to Shift-DR (3 TCK) + DR shift
+    const irShiftCycles = 5 + irLength
+    const drShiftCycles = 5 + drLength
+    const totalCycles = irShiftCycles + drShiftCycles
+    const scanTimeUs = totalCycles / tckFreq
+
+    // Boundary scan: each cell can capture/update pin state
+    // Detection capability
+    const pinsTestable = chainLength // one cell per pin
+    const faultCoverage = scanMode === 'extest' ? 95 : (scanMode === 'intest' ? 85 : 40) // %
+
+    // Signal integrity effects
+    const siMap = { good: 0, marginal: 1, poor: 3 }
+    const glitches = siMap[signalIntegrity] || 0
+    const glitchEffect = glitches * 2 // % scan failure rate
+
+    // Without pullup: TMS/TDI floating causes random TAP state transitions
+    const floatingErrors = hasPullup ? 0 : 15 // % error rate
+
+    // Stuck-at fault detection
+    // Each boundary cell can detect stuck-at-0/stuck-at-1 on its pin
+    const stuckAtFaults = 2 * pinsTestable // total detectable fault types
+    const detectableFaults = Math.floor(stuckAtFaults * faultCoverage / 100 * (1 - glitchEffect / 100) * (1 - floatingErrors / 100))
+
+    // SWD vs JTAG comparison
+    const swdPins = 2 // SWDIO + SWCLK
+    const jtagPins = 5 // TDI + TDO + TMS + TCK + TRST
+    const pinReduction = jtagPins - swdPins
+
+    // Error conditions
+    let error = null, errorTitle = null, errorExplanation = null
+    if (!hasPullup) {
+      error = 'JTAG_NO_PULLUP'
+      errorTitle = '缺少上拉电阻！TAP状态失控 ⚠️'
+      errorExplanation = `TMS/TDI无上拉时浮空电平随机跳变，\nTAP控制器状态机无法稳定运行。\n错误率约${floatingErrors}%，扫描结果不可靠。\nTMS/TDI/TDO必须加10kΩ上拉到VDD。`
+    } else if (signalIntegrity === 'poor' && tckFreq > 5) {
+      error = 'JTAG_SIGNAL_INTEGRITY'
+      errorTitle = 'TCK信号质量差！扫描错误 ⚠️'
+      errorExplanation = `TCK=${tckFreq}MHz下信号完整性差（${signalIntegrity}），\n上升/下降沿退化导致建立/保持时间违例。\n降低TCK频率或改善走线（等长、阻抗匹配、减少过孔）。`
+    } else if (deviceCount > 1 && chainLength > 256) {
+      error = 'JTAG_CHAIN_TOO_LONG'
+      errorTitle = '扫描链过长！时序违例 ⚠️'
+      errorExplanation = `${deviceCount}个器件共${chainLength}个边界单元，\nTDO传播延迟累积超过TCK周期。\n降低TCK频率或分割扫描链。`
+    }
+
+    const modeNames = { extest: 'EXTEST(外部测试)', intest: 'INTEST(内部测试)', sample: 'SAMPLE(采样)', bypass: 'BYPASS(旁路)' }
+    const siNames = { good: '良好', marginal: '临界', poor: '差' }
+
+    const result = {
+      scanMode: modeNames[scanMode] || scanMode,
+      deviceCount, chainLength, tckFreq,
+      irLength, drLength,
+      totalCycles, scanTimeUs: parseFloat(scanTimeUs.toFixed(2)),
+      pinsTestable, faultCoverage: parseFloat(faultCoverage.toFixed(0)),
+      detectableFaults, stuckAtFaults,
+      glitches, glitchEffect: parseFloat(glitchEffect.toFixed(1)),
+      floatingErrors: parseFloat(floatingErrors.toFixed(0)),
+      hasPullup, signalIntegrity: siNames[signalIntegrity] || signalIntegrity,
+      swdPins, jtagPins, pinReduction,
+      loadState: 'running',
+      error, errorTitle, errorExplanation
+    }
+
+    return result
+  }
+
+  /**
+   * 从context或comp默认值获取参数
+   * 优先级：this.context[paramName] > comp['default' + Capitalized] > fallback
+   */
+  _getParam(comp, paramName, fallback) {
+    if (this.context && this.context[paramName] !== undefined) {
+      return this.context[paramName]
+    }
+    const defaultKey = 'default' + paramName.charAt(0).toUpperCase() + paramName.slice(1)
+    if (comp && comp[defaultKey] !== undefined) {
+      return comp[defaultKey]
+    }
+    return fallback
   }
 }

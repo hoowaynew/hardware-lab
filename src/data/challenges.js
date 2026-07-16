@@ -480,5 +480,93 @@ export const challengeData = {
         detail: `Q=${q.toFixed(3)}, 增益=${gainDb.toFixed(1)}dB, fc=${fc.toFixed(0)}Hz`
       }
     }
+  },
+  'dma-transfer': {
+    title: '挑战：4KB数据零CPU搬运',
+    goal: 'CPU占用=0%，传输时间<100μs',
+    constraint: '传输数据量≥2048字节',
+    timeLimit: 60,
+    check: (result) => {
+      const dma = result?.results?.DMA1
+      const cpuUsage = dma?.dmaCpuUsage ?? 999
+      const time = dma?.dmaTimeUs ?? 9999
+      const size = dma?.transferSize ?? 0
+      const hasError = dma?.error ? true : false
+      const sizeOk = size >= 2048
+      return {
+        passed: cpuUsage < 1 && time < 100 && sizeOk && !hasError,
+        score: Math.max(0, 100 - Math.max(0, time - 50) * 0.5 - (cpuUsage > 0 ? 50 : 0) - (!sizeOk ? 30 : 0) - (hasError ? 20 : 0)),
+        detail: `CPU=${cpuUsage}%, 时间=${time}μs, 数据量=${size}B`
+      }
+    }
+  },
+  'ultrasonic-hc-sr04': {
+    title: '挑战：10米精确测距',
+    goal: '测距误差 < 0.5cm',
+    constraint: '目标距离=1000cm，温度=30°C',
+    timeLimit: 60,
+    check: (result) => {
+      const us = result?.results?.US1
+      const error = us ? Math.abs(us.tempErrorCm) : 999
+      const detectable = us?.detectable ?? false
+      const hasError = us?.error ? true : false
+      return {
+        passed: error < 0.5 && detectable && !hasError,
+        score: Math.max(0, 100 - error * 20 - (!detectable ? 40 : 0) - (hasError ? 20 : 0)),
+        detail: `误差=${error.toFixed(2)}cm, 可检测=${detectable}`
+      }
+    }
+  },
+  'diff-pair-routing': {
+    title: '挑战：USB3.0差分对设计',
+    goal: '阻抗偏差<5%，Skew<5ps',
+    constraint: '目标90Ω，频率5GHz',
+    timeLimit: 90,
+    check: (result) => {
+      const dp = result?.results?.DP1
+      const impErr = dp ? Math.abs(dp.impErrorPct) : 999
+      const skew = dp ? Math.abs(dp.skewPs) : 999
+      const hasError = dp?.error ? true : false
+      return {
+        passed: impErr < 5 && skew < 5 && !hasError,
+        score: Math.max(0, 100 - impErr * 5 - skew * 5 - (hasError ? 20 : 0)),
+        detail: `阻抗偏差=${impErr.toFixed(2)}%, Skew=${skew.toFixed(1)}ps`
+      }
+    }
+  },
+  'lora-link-budget': {
+    title: '挑战：10km远距离通信',
+    goal: '链路余量>10dB，空中时间<2s',
+    constraint: '距离=10km',
+    timeLimit: 60,
+    check: (result) => {
+      const lr = result?.results?.LR1
+      const margin = lr?.linkMargin ?? -999
+      const airTime = lr?.airTimeMs ?? 99999
+      const hasError = lr?.error ? true : false
+      return {
+        passed: margin > 10 && airTime < 2000 && !hasError,
+        score: Math.max(0, margin + 20 - Math.max(0, airTime - 500) * 0.01 - (hasError ? 30 : 0)),
+        detail: `余量=${margin.toFixed(1)}dB, 空中时间=${airTime.toFixed(0)}ms`
+      }
+    }
+  },
+  'jtag-boundary-scan': {
+    title: '挑战：多器件链路故障检测',
+    goal: '覆盖率≥90%，无扫描错误',
+    constraint: '器件数≥3',
+    timeLimit: 60,
+    check: (result) => {
+      const jt = result?.results?.JT1
+      const coverage = jt?.faultCoverage ?? 0
+      const devices = jt?.deviceCount ?? 0
+      const hasError = jt?.error ? true : false
+      const devicesOk = devices >= 3
+      return {
+        passed: coverage >= 90 && !hasError && devicesOk,
+        score: Math.max(0, coverage - (hasError ? 30 : 0) - (!devicesOk ? 40 : 0)),
+        detail: `覆盖率=${coverage}%, 器件=${devices}, 错误=${hasError}`
+      }
+    }
   }
 }

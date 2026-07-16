@@ -1,0 +1,96 @@
+{
+  "id": "dma-transfer",
+  "topic_id": "stm32-003",
+  "title": "DMA数据传输：解放CPU的外设直通",
+  "category": "stm32",
+  "difficulty": "intermediate",
+  "description": "配置DMA通道搬运数据，对比CPU轮询vs DMA直传的效率差异。",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "dma-transfer",
+        "id": "DMA1",
+        "x": 200,
+        "y": 140,
+        "label": "DMA通道",
+        "defaultSrc": "memory",
+        "defaultDst": "uart",
+        "defaultTransferSize": 256,
+        "defaultDataWidth": 8,
+        "defaultBurstSize": 4,
+        "defaultCpuLoad": 100,
+        "defaultClockFreq": 72
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "toggle",
+      "property": "dmaSrc",
+      "values": ["memory", "adc", "spi"],
+      "labels": ["内存", "ADC", "SPI"],
+      "label": "数据源"
+    },
+    {
+      "type": "toggle",
+      "property": "dmaDst",
+      "values": ["uart", "memory", "dac"],
+      "labels": ["UART", "内存", "DAC"],
+      "label": "目标外设"
+    },
+    {
+      "type": "slider",
+      "property": "dmaTransferSize",
+      "min": 16,
+      "max": 4096,
+      "step": 16,
+      "default": 256,
+      "unit": "bytes",
+      "label": "传输数据量"
+    },
+    {
+      "type": "toggle",
+      "property": "dmaDataWidth",
+      "values": [8, 16, 32],
+      "labels": ["8位", "16位", "32位"],
+      "label": "数据位宽"
+    },
+    {
+      "type": "toggle",
+      "property": "dmaBurstSize",
+      "values": [1, 4, 8, 16],
+      "labels": ["1", "4", "8", "16"],
+      "label": "突发长度"
+    },
+    {
+      "type": "toggle",
+      "property": "dmaMode",
+      "values": ["normal", "circular", "double-buffer"],
+      "labels": ["单次", "循环", "双缓冲"],
+      "label": "传输模式"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "cpuUsage > 80 && mode === 'polling'",
+      "type": "DMA_CPU_BURDEN",
+      "title": "CPU被数据搬运占满！⚠️",
+      "explanation": "CPU轮询模式下搬运 {transferSize} 字节占用 {cpuUsage}% 算力。\n每个字节需读-写-判断循环约20周期，72MHz下约3.6μs/字节。\n改用DMA可降至0% CPU占用，仅需配置通道即可。",
+      "article_ref": "stm32-003"
+    },
+    {
+      "condition": "fifoOverflow && burstSize > dataWidth",
+      "type": "DMA_FIFO_OVERFLOW",
+      "title": "FIFO溢出！数据丢失 ⚠️",
+      "explanation": "突发长度 {burstSize} 超过FIFO深度，数据在搬运途中溢出。\nDMA FIFO通常4~16字节，突发长度不应超过FIFO深度。\n降低突发长度或减小数据位宽。",
+      "article_ref": "stm32-003"
+    }
+  ],
+  "targets": {
+    "perfect": "CPU占用 0%，传输时间 < 50μs，无错误",
+    "hint": "DMA传输时间 = 字节数 / (时钟频率 × 突发效率)；CPU占用 = 0%（DMA独立工作）"
+  }
+}

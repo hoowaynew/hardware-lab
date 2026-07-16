@@ -641,5 +641,118 @@ export const knowledgeData = {
       'K=1(电压跟随器)时Q=0.5，过阻尼响应不够陡',
       'K接近3时Q趋无穷大，滤波器变成振荡器！K必须<3'
     ]
+  },
+  'dma-transfer': {
+    title: 'DMA数据传输原理',
+    formulas: [
+      { label: 'DMA搬运时间', expr: 't = N_bursts × cycles_per_burst / f_clk' },
+      { label: 'CPU轮询开销', expr: 't_cpu = N_bytes × 20 / f_clk (约20周期/字节)' },
+      { label: '突发传输量', expr: 'N_burst = burst_size × (width/8) 字节' }
+    ],
+    concepts: [
+      'DMA(Direct Memory Access)让外设与内存直接交换数据，不需要CPU干预',
+      'STM32有DMA1/DMA2两个控制器，共16个通道(STM32F1)，每个通道映射到固定外设',
+      '数据位宽8/16/32位，突发长度1/4/8/16节拍，越大吞吐越高但FIFO要求也越高',
+      '三种传输模式：单次(Normal)、循环(Circular)、双缓冲(Double Buffer)',
+      'DMA传输期间CPU可执行其他任务，实现真正并行处理',
+      '双缓冲模式在后台缓冲填充时处理前台缓冲，无缝切换零等待'
+    ],
+    tips: [
+      'UART接收大量数据时务必用DMA+空闲中断，CPU占用从100%降到~0%',
+      '突发长度不能超过FIFO深度，STM32 DMA FIFO为4字(16字节)',
+      'ADC多通道扫描必须配DMA循环模式，自动写入缓冲区',
+      'DMA中断只在整个传输完成时触发，无需逐字节判断'
+    ]
+  },
+  'ultrasonic-hc-sr04': {
+    title: 'HC-SR04超声波测距原理',
+    formulas: [
+      { label: '测距公式', expr: 'd = v × t_echo / 2' },
+      { label: '声速温度补偿', expr: 'v = 331.3 + 0.606 × T (°C)' },
+      { label: '最大测量频率', expr: 'f_max = 1 / (t_echo + t_interval)' }
+    ],
+    concepts: [
+      'HC-SR04先发8个40kHz脉冲，然后等回波，Echo引脚高电平时间=往返时间',
+      '声速随温度变化：0°C时331m/s，20°C时343m/s，40°C时355m/s',
+      '量程2~400cm，精度约3mm（理想条件下）',
+      'Echo引脚高电平最长38ms，超时表示未检测到障碍物',
+      '不同材质反射率：硬质平面~100%，布料~60%，倾斜面~30%，多孔材料~20%',
+      '浮空输入引脚会拾取噪声导致抖动，建议用上拉/下拉输入或加施密特触发器'
+    ],
+    tips: [
+      '务必加温度补偿，否则10°C温差会导致2%测距误差',
+      '多次测量取中值滤波可有效抑制噪声抖动',
+      '连续测量间隔应≥60ms（等回波衰减完），否则会收到上次反射的余震',
+      '倾斜面>15°时超声波会反射到其他方向，导致检测失败'
+    ]
+  },
+  'diff-pair-routing': {
+    title: '差分走线设计原理',
+    formulas: [
+      { label: '差分阻抗', expr: 'Z_diff ≈ 2×Z₀×(1 - 0.48×e^(-0.96×S/H))' },
+      { label: '微带线单端阻抗', expr: 'Z₀ = 87/√(Er+1.41) × ln(5.98H/(0.8W+T))' },
+      { label: '时序偏斜', expr: 'skew = ΔL / v, v = c/√((Er+1)/2)' }
+    ],
+    concepts: [
+      '差分信号通过两条等长、等距、对称的走线传输，抗共模干扰能力强',
+      '差分对长度必须严格匹配，长度差引起时序偏斜(Skew)，导致眼图闭合',
+      '常见差分阻抗标准：USB 90Ω、LVDS/MIPI 100Ω、RS-485 120Ω',
+      '边缘耦合(Edge-coupled)是PCB最常用的差分耦合方式',
+      '高速信号(>1GHz)长度失配应<5mil，可用蛇形走线补偿',
+      '模态转换(Mode Conversion)将差模信号转共模噪声，由阻抗不对称引起'
+    ],
+    tips: [
+      '差分对走线紧密耦合(2S≤3W)，但间距太小会增加制造难度',
+      '等长补偿用蛇形走线，在接收端附近补偿效果最好',
+      '差分对不要随意换层，每次换层都会引入阻抗不连续',
+      '高速差分对下方必须有完整参考地平面，否则回流路径不连续'
+    ]
+  },
+  'lora-link-budget': {
+    title: 'LoRa扩频通信原理',
+    formulas: [
+      { label: '符号时间', expr: 'Ts = 2^SF / BW' },
+      { label: '接收灵敏度', expr: 'S = -174 + 10log(BW) + NF + SNR_min' },
+      { label: '链路余量', expr: 'Margin = RSSI - Sensitivity' }
+    ],
+    concepts: [
+      'LoRa使用线性调频扩频(Chirp Spread Spectrum)，SF6~SF12可选',
+      'SF越大→符号时间越长→灵敏度越好→传输越慢→距离越远',
+      'BW越窄→噪声功率越低→灵敏度越好→但数据速率越低',
+      'CR(编码率)4/5~4/8提供前向纠错，CR越大抗干扰越强但开销越大',
+      'SF12+125kHz可达-20dB SNR工作，最远15km+（视距）',
+      'SF7+500kHz适合高速短距(~50kbps)，SF12+125kHz适合低速远距(~0.3kbps)',
+      'EU 868MHz频段占空比限制1%，每小时最多发射36秒'
+    ],
+    tips: [
+      '远距离优先增大SF而非增大功率，SF每+1灵敏度约+2.5dB',
+      '低数据速率优化(SF≥11时开启DE)可改善解调性能',
+      '空中时间>1s时碰撞概率急剧上升，适合低频传感器上报',
+      'LoRaWAN Class A设备每次发送后只在RX1/RX2窗口接收，最省电'
+    ]
+  },
+  'jtag-boundary-scan': {
+    title: 'JTAG/SWD边界扫描原理',
+    formulas: [
+      { label: '扫描周期', expr: 'T = (5+IR_len) + (5+DR_len) TCK周期' },
+      { label: '故障覆盖', expr: '覆盖率 = EXTEST ~95%, INTEST ~85%' },
+      { label: 'SWD引脚', expr: 'SWD = 2脚(SWDIO+SWCLK) vs JTAG 5脚' }
+    ],
+    concepts: [
+      'JTAG通过TAP(Test Access Port)控制器访问芯片内部边界扫描寄存器(BSR)',
+      'TAP是一个16态有限状态机，由TMS信号控制状态转移',
+      'EXTEST模式测试板级互连：驱动输出引脚+捕获输入引脚',
+      'INTEST模式测试芯片内部逻辑：从BSR驱动输入+捕获输出',
+      '每个I/O引脚对应一个边界扫描单元(BSC)，可独立控制/观测',
+      'JTAG链可串联多个器件，TDI→D1→D2→...→Dn→TDO',
+      'SWD(Serial Wire Debug)用2脚实现JTAG功能，节省3个引脚',
+      'TMS/TDI必须有上拉电阻，否则浮空导致TAP状态随机跳变'
+    ],
+    tips: [
+      'TCK频率不宜过高，长扫描链的传播延迟会累积导致时序违例',
+      '用JTAG可以不需要探针就检测焊接缺陷(虚焊/桥接/开路)',
+      'BSDL文件描述芯片的边界扫描结构，是编写测试程序的基础',
+      'SWD模式下仍可访问JTAG调试功能，大多数Cortex-M芯片首选SWD'
+    ]
   }
 }

@@ -1,0 +1,84 @@
+{
+  "id": "ultrasonic-hc-sr04",
+  "topic_id": "sensor-003",
+  "title": "超声波HC-SR04测距：声速·温度·反射面",
+  "category": "sensor",
+  "difficulty": "beginner",
+  "description": "发个超声波，听回波，算距离。但温度和障碍物材质会捣乱！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "ultrasonic-sensor",
+        "id": "US1",
+        "x": 200,
+        "y": 140,
+        "label": "HC-SR04",
+        "defaultTriggerInterval": 100,
+        "defaultTemperature": 20,
+        "defaultTargetDistance": 50,
+        "defaultEchoPinMode": "input_floating",
+        "defaultFilter": true,
+        "defaultObstacleType": "flat"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "usTargetDistance",
+      "min": 1,
+      "max": 400,
+      "step": 1,
+      "default": 50,
+      "unit": "cm",
+      "label": "目标距离"
+    },
+    {
+      "type": "slider",
+      "property": "usTemperature",
+      "min": -10,
+      "max": 50,
+      "step": 1,
+      "default": 20,
+      "unit": "°C",
+      "label": "环境温度"
+    },
+    {
+      "type": "toggle",
+      "property": "usObstacleType",
+      "values": ["flat", "soft", "angled", "mesh"],
+      "labels": ["硬质平面", "软质材料", "倾斜面", "网格/多孔"],
+      "label": "障碍物类型"
+    },
+    {
+      "type": "toggle",
+      "property": "usEchoPinMode",
+      "values": ["input_floating", "input_pullup", "input_pulldown"],
+      "labels": ["浮空输入", "上拉输入", "下拉输入"],
+      "label": "Echo引脚模式"
+    },
+    {
+      "type": "toggle",
+      "property": "usFilter",
+      "values": [true, false],
+      "labels": ["中值滤波", "无滤波"],
+      "label": "软件滤波"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "!inRange || !detectable || Math.abs(tempErrorCm) > 2",
+      "type": "US_MEASUREMENT_ERROR",
+      "title": "测距异常！⚠️",
+      "explanation": "检查距离是否在量程内、障碍物反射率是否足够、温度补偿是否正确。",
+      "article_ref": "sensor-003"
+    }
+  ],
+  "targets": {
+    "perfect": "测距误差 < 0.5cm，回波幅度 ≥ 80%",
+    "hint": "d = v × t_echo / 2，v = 331.3 + 0.606 × T (°C)"
+  }
+}

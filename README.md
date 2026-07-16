@@ -13,7 +13,7 @@ npm run build    # 构建到 dist/
 npm run preview  # 预览构建结果
 ```
 
-## 30个实验 · 11大分类
+## 35个实验 · 11大分类
 
 | # | 实验 | 分类 | 难度 | 交互 | 错误触发 |
 |---|------|------|------|------|----------|
@@ -47,6 +47,11 @@ npm run preview  # 预览构建结果
 | 28 | BLE蓝牙链路预算 | 📡 无线 | 🟡 进阶 | 发射功率/距离/频率/障碍物 | RSSI低于灵敏度 → 连接断开 |
 | 29 | RS-485差分总线 | 🔗 通信 | 🟡 进阶 | 波特率/线长/终端电阻/节点 | 无终端电阻 → 信号反射振铃 |
 | 30 | Sallen-Key有源滤波 | 〰️ 信号 | 🔴 高级 | R/C/Q值/输入频率滑块 | Q值过高 → 谐振峰/自激 |
+| 31 | DMA数据传输对比 | 📋 STM32 | 🟡 进阶 | 数据源/目标/数据量/位宽/突发/模式 | FIFO溢出 / CPU被搬运占满 |
+| 32 | 超声波HC-SR04测距 | 📡 传感器 | 🟢 入门 | 距离/温度/障碍物/引脚模式/滤波 | 超量程 / 回波太弱 / 温度漂移 |
+| 33 | 差分走线等长设计 | 🎨 PCB | 🔴 高级 | 线宽/线距/介质/失配/阻抗标准/频率 | 阻抗偏差 / 时序偏斜 / 间距过小 |
+| 34 | LoRa扩频通信 | 📡 无线 | 🟡 进阶 | SF/BW/CR/功率/距离/负载 | 链路不足 / 空中时间过长 / SF/BW不当 |
+| 35 | JTAG/SWD边界扫描 | 🐛 调试 | 🔴 高级 | 扫描模式/器件数/链长/TCK/信号质量/上拉 | 无上拉→TAP失控 / 信号差 / 链过长 |
 
 ## 架构
 
@@ -65,15 +70,15 @@ components/       Vue3 UI组件
   ErrorPopup.vue        错误教学弹窗
   SmokeAnimation.vue    烧毁冒烟动画
   PwmLoadView.vue       PWM负载可视化
-  + 15个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖/LDO/555/ESD/UART/光敏/LC带通/MOSFET/继电器/R2R-DAC/ADC/地平面/探头/BLE/RS485/Sallen-Key）
+  + 20个专用View组件（分压器/电容/三极管/RC/I2C/NTC/PCB/WiFi/LA/Buck/运放/消抖/LDO/555/ESD/UART/光敏/LC带通/MOSFET/继电器/R2R-DAC/ADC/地平面/探头/BLE/RS485/Sallen-Key/DMA/超声波/差分走线/LoRa/JTAG）
 stores/           Pinia状态管理
   experiment.js   实验状态+仿真调度
-  progress.js     进度持久化+成就系统（8个成就/30实验）
+  progress.js     进度持久化+成就系统（8个成就/35实验）
   favorites.js    收藏+最近浏览（localStorage）
 data/             知识点+提示+挑战数据
-  knowledge.js    30个实验核心公式/概念/提示
-  hints.js        30个实验3级渐进提示
-  challenges.js   30个实验挑战模式配置（目标/约束/计时/评分）
+  knowledge.js    35个实验核心公式/概念/提示
+  hints.js        35个实验3级渐进提示
+  challenges.js   35个实验挑战模式配置（目标/约束/计时/评分）
 ```
 
 ## 进度与成就系统

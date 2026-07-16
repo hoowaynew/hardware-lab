@@ -906,6 +906,106 @@
           </span>
         </div>
       </div>
+      <div v-else-if="currentExpId === 'dma-transfer'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <DmaTransferView
+          :simResult="store.simResult?.results?.DMA1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'ultrasonic-hc-sr04'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <UltrasonicView
+          :simResult="store.simResult?.results?.US1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'diff-pair-routing'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <DiffPairView
+          :simResult="store.simResult?.results?.DP1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'lora-link-budget'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <LoRaLinkView
+          :simResult="store.simResult?.results?.LR1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
+      <div v-else-if="currentExpId === 'jtag-boundary-scan'" class="experiment-content">
+        <CircuitCanvas
+          :canvas="store.currentExperiment.canvas"
+          :simResult="store.simResult"
+          :errors="store.errors"
+        />
+        <JtagBoundaryView
+          :simResult="store.simResult?.results?.JT1"
+        />
+        <InteractionPanel
+          :interactions="store.currentExperiment.interactions"
+          :userState="store.userState"
+          @update="onUserUpdate"
+        />
+        <div class="status-bar" v-if="statusText">
+          <span :class="['status-text', { 'status-error': store.hasError, 'status-ok': !store.hasError }]">
+            {{ statusText }}
+          </span>
+        </div>
+      </div>
     </main>
 
     <!-- 实验笔记 -->
@@ -1007,6 +1107,11 @@ import OscilloscopeProbeView from './components/OscilloscopeProbeView.vue'
 import BLELinkView from './components/BLELinkView.vue'
 import RS485BusView from './components/RS485BusView.vue'
 import SallenKeyView from './components/SallenKeyView.vue'
+import DmaTransferView from './components/DmaTransferView.vue'
+import UltrasonicView from './components/UltrasonicView.vue'
+import DiffPairView from './components/DiffPairView.vue'
+import LoRaLinkView from './components/LoRaLinkView.vue'
+import JtagBoundaryView from './components/JtagBoundaryView.vue'
 import ChallengeMode from './components/ChallengeMode.vue'
 import KnowledgePanel from './components/KnowledgePanel.vue'
 import HintButton from './components/HintButton.vue'
@@ -1050,6 +1155,11 @@ import oscilloscopeProbeConfig from './experiments/oscilloscope-probe.json'
 import bleLinkConfig from './experiments/ble-link-budget.json'
 import rs485BusConfig from './experiments/rs485-bus.json'
 import sallenKeyConfig from './experiments/sallen-key-filter.json'
+import dmaTransferConfig from './experiments/dma-transfer.json'
+import ultrasonicConfig from './experiments/ultrasonic-hc-sr04.json'
+import diffPairConfig from './experiments/diff-pair-routing.json'
+import loraLinkConfig from './experiments/lora-link-budget.json'
+import jtagBoundaryConfig from './experiments/jtag-boundary-scan.json'
 
 const store = useExperimentStore()
 const progress = useProgressStore()
@@ -1087,7 +1197,12 @@ const allExperiments = [
   { id: 'oscilloscope-probe', icon: '🐛', shortTitle: '探头补偿', desc: '欠/过补偿/10x带宽', config: oscilloscopeProbeConfig, difficulty: 'intermediate' },
   { id: 'ble-link-budget', icon: '📡', shortTitle: 'BLE蓝牙链路', desc: '2.4GHz传播/人体衰减', config: bleLinkConfig, difficulty: 'intermediate' },
   { id: 'rs485-bus', icon: '🔗', shortTitle: 'RS-485总线', desc: '终端电阻/信号完整性', config: rs485BusConfig, difficulty: 'intermediate' },
-  { id: 'sallen-key-filter', icon: '〰️', shortTitle: 'Sallen-Key滤波', desc: '有源二阶/Q值/频率响应', config: sallenKeyConfig, difficulty: 'advanced' }
+  { id: 'sallen-key-filter', icon: '〰️', shortTitle: 'Sallen-Key滤波', desc: '有源二阶/Q值/频率响应', config: sallenKeyConfig, difficulty: 'advanced' },
+  { id: 'dma-transfer', icon: '📋', shortTitle: 'DMA数据传输', desc: 'CPU轮询vs DMA直传效率', config: dmaTransferConfig, difficulty: 'intermediate' },
+  { id: 'ultrasonic-hc-sr04', icon: '📡', shortTitle: '超声波测距', desc: 'HC-SR04声速/温度/反射面', config: ultrasonicConfig, difficulty: 'beginner' },
+  { id: 'diff-pair-routing', icon: '🎨', shortTitle: '差分走线等长', desc: 'USB3/MIPI阻抗与Skew', config: diffPairConfig, difficulty: 'advanced' },
+  { id: 'lora-link-budget', icon: '📡', shortTitle: 'LoRa扩频通信', desc: 'SF/BW/CR链路预算', config: loraLinkConfig, difficulty: 'intermediate' },
+  { id: 'jtag-boundary-scan', icon: '🐛', shortTitle: 'JTAG边界扫描', desc: 'TAP状态机/故障检测', config: jtagBoundaryConfig, difficulty: 'advanced' }
 ]
 
 const categories = [

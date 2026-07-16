@@ -1,0 +1,91 @@
+{
+  "id": "jtag-boundary-scan",
+  "topic_id": "debug-003",
+  "title": "JTAG/SWD边界扫描：TAP状态机与故障检测",
+  "category": "debug",
+  "difficulty": "advanced",
+  "description": "用JTAG扫一遍边界寄存器，哪个引脚短路/开路一目了然。",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "jtag-boundary",
+        "id": "JT1",
+        "x": 200,
+        "y": 140,
+        "label": "JTAG链",
+        "defaultScanMode": "extest",
+        "defaultDeviceCount": 1,
+        "defaultChainLength": 128,
+        "defaultTckFreq": 10,
+        "defaultPullup": true,
+        "defaultSignalIntegrity": "good"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "toggle",
+      "property": "jtagScanMode",
+      "values": ["extest", "intest", "sample", "bypass"],
+      "labels": ["EXTEST", "INTEST", "SAMPLE", "BYPASS"],
+      "label": "扫描模式"
+    },
+    {
+      "type": "slider",
+      "property": "jtagDeviceCount",
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "default": 1,
+      "unit": "个",
+      "label": "链上器件数"
+    },
+    {
+      "type": "slider",
+      "property": "jtagChainLength",
+      "min": 32,
+      "max": 512,
+      "step": 32,
+      "default": 128,
+      "unit": "b",
+      "label": "边界寄存器长度"
+    },
+    {
+      "type": "toggle",
+      "property": "jtagTckFreq",
+      "values": [1, 5, 10, 25, 50],
+      "labels": ["1MHz", "5MHz", "10MHz", "25MHz", "50MHz"],
+      "label": "TCK频率"
+    },
+    {
+      "type": "toggle",
+      "property": "jtagSignalIntegrity",
+      "values": ["good", "marginal", "poor"],
+      "labels": ["良好", "临界", "差"],
+      "label": "信号完整性"
+    },
+    {
+      "type": "toggle",
+      "property": "jtagPullup",
+      "values": [true, false],
+      "labels": ["有上拉(10kΩ)", "无上拉"],
+      "label": "TMS/TDI上拉"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "!hasPullup || (signalIntegrity === 'poor' && tckFreq > 5) || (deviceCount > 1 && chainLength > 256)",
+      "type": "JTAG_SCAN_ERROR",
+      "title": "边界扫描异常 ⚠️",
+      "explanation": "检查上拉电阻、TCK信号质量和扫描链长度。",
+      "article_ref": "debug-003"
+    }
+  ],
+  "targets": {
+    "perfect": "故障覆盖率 ≥ 95%，扫描无错误",
+    "hint": "TAP有16个状态，EXTEST模式下可检测所有引脚的stuck-at故障"
+  }
+}

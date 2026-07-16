@@ -1,0 +1,99 @@
+{
+  "id": "diff-pair-routing",
+  "topic_id": "pcb-003",
+  "title": "差分走线等长：USB3.0/MIPI阻抗与Skew",
+  "category": "pcb",
+  "difficulty": "advanced",
+  "description": "差分信号要等长、等距、阻抗匹配。差一点就走不通！",
+  "canvas": {
+    "width": 400,
+    "height": 280,
+    "components": [
+      {
+        "type": "diff-pair-routing",
+        "id": "DP1",
+        "x": 200,
+        "y": 140,
+        "label": "差分对",
+        "defaultTargetImpedance": 100,
+        "defaultTraceWidth": 0.15,
+        "defaultTraceGap": 0.15,
+        "defaultSubstrateHeight": 0.5,
+        "defaultSubstrateEr": 4.3,
+        "defaultSignalFreq": 5000,
+        "defaultLengthMismatch": 0,
+        "defaultRoutingMode": "edge-coupled"
+      }
+    ],
+    "wires": []
+  },
+  "interactions": [
+    {
+      "type": "slider",
+      "property": "dpTraceWidth",
+      "min": 0.08,
+      "max": 0.3,
+      "step": 0.01,
+      "default": 0.15,
+      "unit": "mm",
+      "label": "线宽(W)"
+    },
+    {
+      "type": "slider",
+      "property": "dpTraceGap",
+      "min": 0.08,
+      "max": 0.3,
+      "step": 0.01,
+      "default": 0.15,
+      "unit": "mm",
+      "label": "线距(S)"
+    },
+    {
+      "type": "slider",
+      "property": "dpSubstrateHeight",
+      "min": 0.2,
+      "max": 1.0,
+      "step": 0.05,
+      "default": 0.5,
+      "unit": "mm",
+      "label": "介质厚度(H)"
+    },
+    {
+      "type": "slider",
+      "property": "dpLengthMismatch",
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "default": 0,
+      "unit": "mm",
+      "label": "长度失配"
+    },
+    {
+      "type": "toggle",
+      "property": "dpTargetImpedance",
+      "values": [90, 100, 120],
+      "labels": ["90Ω (USB)", "100Ω (LVDS)", "120Ω (RS485)"],
+      "label": "目标差分阻抗"
+    },
+    {
+      "type": "toggle",
+      "property": "dpSignalFreq",
+      "values": [480, 5000, 10000],
+      "labels": ["480MHz (USB2)", "5GHz (USB3)", "10GHz (PCIe)"],
+      "label": "信号频率"
+    }
+  ],
+  "error_triggers": [
+    {
+      "condition": "Math.abs(impErrorPct) > 10 || !skewOk || traceGap < 0.1",
+      "type": "DP_ROUTING_ERROR",
+      "title": "差分走线设计问题 ⚠️",
+      "explanation": "检查阻抗偏差、长度失配和线距是否符合高速设计规范。",
+      "article_ref": "pcb-003"
+    }
+  ],
+  "targets": {
+    "perfect": "阻抗偏差 < 5%，Skew < 5ps，眼图高度 ≥ 90%",
+    "hint": "Z_diff ≈ 2×Z₀×(1 - 0.48×e^(-0.96×S/H))"
+  }
+}
